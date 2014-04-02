@@ -1,0 +1,34 @@
+body {
+	font-size: 14px;
+	font-family: "Trebuchet MS", "Arial", "Helvetica", "Verdana", "sans-serif";
+}
+
+table {
+	font-size: 1em;
+}
+
+.demo-description {
+	clear: both;
+	padding: 10px;
+	font-size: 1.3em;
+	line-height: 1.4em;
+}
+
+.ui-draggable, .ui-droppable {
+	background-position: top;
+}
+
+.p {
+color: #F00;
+}
+
+.text {
+color: #000;
+}
+bold {
+font-weight: bold;
+}
+
+.bold {
+font-weight: bold;
+}
