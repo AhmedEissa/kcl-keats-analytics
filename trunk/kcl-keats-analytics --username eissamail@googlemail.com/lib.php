@@ -22,8 +22,24 @@
  * @copyright 2013 Eissa Creations Limited
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
+ 
+/* error reporting for development */
+error_reporting(7);
+ini_set('display_errors', 'On');
+ 
 defined('MOODLE_INTERNAL') || die();
+
+/* include progress and related functions in include file and map functions */
+include_once("lib_progress.php");
+function display_progress_tracker($courseid)
+{
+    return display_progress_tracker_include($courseid);
+} 
+function display_progress_tracker_chart($courseid)
+{
+    return display_progress_tracker_chart_include($courseid);
+}
+
 
 function display_tabs($courseid, $htmlcode)
 {
@@ -64,12 +80,12 @@ function display_tabs($courseid, $htmlcode)
                     </script>
                     <style>
                           body {";
-   $htmlScript = $htmlScript . 'font-family: "Trebuchet MS", "Helvetica", "Arial",  "Verdana", "sans-serif";
-	                               font-size: 62.5%;
+   $htmlScript = $htmlScript . '/*font-family: "Trebuchet MS", "Helvetica", "Arial",  "Verdana", "sans-serif";
+	                               font-size: 62.5%;*/
                                    }
                                    .ui-accordion .ui-accordion-content {
 	                               padding:10px;
-	                               font-size:75%;
+	                               font-size:50%;/*75%;*/
                                    }
                     </style>';
 
@@ -105,9 +121,9 @@ function display_pageview($courseid)
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab1';
    $data = "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>*</td><td>Staff: 0</td>";
-   $data .= "<tr><td>*</td><td>Students: 0</td>";
-   $data .= "<tr><td>*</td><td>All: 0</td>";
+   $data .= "<tr><td>*</td><td>Staff: 0</td></tr>";
+   $data .= "<tr><td>*</td><td>Students: 0</td></tr>";
+   $data .= "<tr><td>*</td><td>All: 0</td></tr>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='page' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
@@ -121,7 +137,7 @@ function display_learning_design($courseid)
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab5';
    $data = "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>Click on \"More\" to view the chart.</td>";
+   $data .= "<tr><td>Click on \"More\" to view the chart.</td></tr>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='learningdesign' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
@@ -134,380 +150,6 @@ function display_learning_design_chart($courseid)
 {
    echo "Under Construction...";
 }
-
-/** PROGRESS TAB START
- * @ref http://docs.moodle.org/dev/Data_manipulation_API
- * @ref TODO http://docs.moodle.org/dev/Coding_style
- * @ref http://docs.moodle.org/dev/Database_schema_introduction
- */
-
-/**
- * Helper?: Get course format - not currently used
- *
- * @param int courseid
- * @return string format e.g. "topic"
- */
-function get_course_format($courseid)
-{
-   global $CFG, $DB;
-
-   $sql = "SELECT format FROM {course_format_options} WHERE courseid = ? LIMIT 1";
-   $result = $DB->get_record_sql($sql, array($courseid));
-   return $result->format;
-}
-
-/**
- * Helper: Get list of modules (activities) in course, combined with useful attribute information
- *
- * @param int courseid
- * @return array of fields
- * TODO? Split into get_course_modules_info and get_course_modules_detail ?
- */
-function get_course_modules_info($courseid)
-{
-   global $CFG, $DB;
-
-   $sql = "SELECT  {course_modules}.id,  {course_modules}.section,  {course_modules}.module,  {modules}.name as modname,
-            if (completion > 0 or completiongradeitemnumber is not null or completionview > 0 or completionexpected <> 0,true,false)
-                as required
-            FROM {course_modules}, {modules}
-            WHERE {course_modules}.module = {modules}.id
-            AND course = ?";
-   $params = array($courseid);
-   $result = $DB->get_records_sql($sql, $params);
-
-   // add further info (e.g. titles) from module-specific tables
-   $c = 0;
-   for($c = 0; $c < count($result); $c++)
-   {
-      $module_detail = get_coursemodule_from_id($result[$c]->modname, $result[$c]->id);
-      $result[$c]->name = $module_detail->name;
-   }
-
-   return $result;
-}
-
-/**
- * Helper: Get number of students completing specified module
- *
- * @param int moduleid Identifying module in course_modules_completion (and course_modules)
- * @return int
- */
-function get_course_module_students_completed($moduleid)
-{
-   global $CFG, $DB;
-
-   return $DB->count_records('course_modules_completion', array('coursemoduleid'=>$moduleid));
-}
-
-/**
- * Helper: Check if specified user is student enrolled in course - not currently needed
- *
- * @param int courseid
- * @param int userid
- * @return bool
- * TODO Sort out in getLog?
- */
-function is_student_on_course($courseid, $userid)
-{
-   global $CFG, $DB/*, $USER*/;
-
-   $context = get_context_instance(CONTEXT_COURSE, $courseid);
-   $students = get_role_users(5, $context);
-   $student_ids = array_keys($students);
-   return in_array($userid, $student_ids);
-}
-
-/**
- * Helper: Get userid from username - not currently needed
- *
- * @param int username
- * @return int userid
- * TODO Return userid from getLog?
- */
-function get_userid_from_username($username)
-{
-   global $CFG, $DB;
-
-   $user = $DB->get_record('user', array('username'=>$username));
-   return $user->id;
-}
-
-/**
- * Helper: Get number of students enrolled in course
- *
- * @param int courseid
- * @return int
- */
-function get_course_number_students($courseid)
-{
-   global $CFG, $DB;
-
-   $context = get_context_instance(CONTEXT_COURSE, $courseid);
-   $students = get_role_users(5, $context);
-   return count($students);
-}
-
-/**
- * Helper: Parse moduleid from actionURL - fallback needed if ModuleId weird
- *
- * @param string $actionurl e.g. view.php?id=6
- * @return int Module id or NULL
- */
-function parse_moduleid_from_actionurl($actionurl)
-{
-
-   $moduleid = NULL;
-   if(strpos($actionurl, "id=") > -1)
-   {
-      $id = substr($actionurl, strpos($actionurl, 'id=') + 3);
-      if(is_numeric($id))
-      {
-         $moduleid = $id;
-      }
-   }
-   return $moduleid;
-}
-
-
-/**
- * Helper: Get modules recently accessed by students, optionally with total student accesses for each
- *
- * @param int courseid
- * @param int number Number of modules to count
- * @param bool withaccesses Whether to include total student accesses for each recent module
- * @return array ( [moduleid] => array ( activity, time, student, [accesses] ) ..)
- * TODO?: Could refactor access counting part out
- * XXX: InformationID (ModuleID) needs work?
- */
-function get_course_modules_recently_accessed($courseid, $number = 3, $withaccesses = false)
-{
-   global $CFG, $DB, $LOG;
-
-   // get unique module types to check for
-   $modules = get_course_modules_info($courseid);
-   $module_types = array();
-   foreach($modules as $module)if($module->modname)
-         $module_types[] = $module->modname;
-   $module_types = array_unique($module_types);
-
-   // get $number unique module accesses
-   $recent_accesses = array();
-
-   foreach($LOG['Index'] as $index)
-   {
-      // try work out module Id
-      if(isset($LOG['InformationID']) && is_numeric($LOG['InformationID'][$index]))
-         $moduleid = $LOG['InformationID'][$index];
-      else
-         $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);
-
-      // check conditions for inclusion
-      if($LOG['User_Type'][$index] == "Student"
-      /* old code
-      //is_student_on_course($courseid, get_userid_from_username($LOG['Users'][$index]))
-      //is_student_on_course($courseid, $LOG['UserID'][$index])
-      */
-       && in_array($LOG['Activity'][$index], $module_types)// student activity
-       && $moduleid != // has module id
-      NULL)
-      {
-         // skip if already added
-         if(in_array($moduleid, $recent_accesses))
-            continue;
-         // get module name
-         $name = "";
-         foreach($modules as $module)if($module->id == $moduleid)
-               $name = $module->name;
-         if($name == "")
-            $name = $moduleid;// revert to informationID if not found
-         // finally, add to list
-         $recent_accesses[$moduleid] = array(
-                                             'activity'=>$name,
-                                             'datetime'=>$LOG['Date/Time'][$index],
-                                             'student'=>$LOG['FirstName'][$index] . ' ' . $LOG['LastName'][$index],
-                                             );
-      }
-      // got enough?
-      if(count($recent_accesses) >= $number)
-         break;
-   }
-
-   // add total student accesses?
-   if($withaccesses)
-   {
-      foreach($recent_accesses as $index=>$recent_accesses_detail)
-         /*
-         foreach ($LOG['Index'] as $index) {
-         // ...
-         }
-         */
-         $recent_accesses[$index]['accesses'] = 'TBC';
-      // }
-   }
-
-   return $recent_accesses;
-}
-
-/**
- * Build and display progress tracker summary
- *
- * XXX: Also loads getLog() into global $LOG so it's generally available without further database queries ?
- * @param int courseid
- * @return string html
- */
-function display_progress_tracker($courseid)
-{
-   global $CFG, $DB, $LOG;
-
-   // get log, creating global $LOG variable
-   if( ! isset($LOG))
-      $LOG = getLog($courseid);//?
-   //    var_dump($LOG);
-   //$log_as_normal_array = ..?
-
-   $Recently_Accessed_Resources = 'TBC';
-   $Required_Resources_to_View = 'TBC';
-   $Resources_Summary = 'TBC';
-
-   $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab4';
-
-   $data = "<form action='$url' method='post'>";
-   $data .= "<table>";
-   $data .= "<tr><td><b><u>Recently Accessed Resources:</u></b></td><td>$Recently_Accessed_Resources</td>";
-
-   $recent_accesses = get_course_modules_recently_accessed($courseid);
-   $data .= '<tr><td>';
-   $data .= '<ul>';
-   foreach($recent_accesses as $index=>$access)
-   {
-      $data .= '<li>';
-      $data .= $access['activity'] . '..';
-      $data .= '</li>';
-   }
-   $data .= '</ul>';
-   $data .= '</td></tr>';
-
-   $data .= "<tr><td><b><u>Required Resources to View:</u></b></td><td>$Required_Resources_to_View</td>";
-
-   $modules = get_course_modules_info($courseid);
-   $num_students = get_course_number_students($courseid);
-   $data .= '<tr><td>';
-   $data .= '<ul>';
-   foreach($modules as $module)
-   {
-      if($module->required)
-      {
-         $num_students_completed = get_course_module_students_completed($module->id);
-         $percentage_completed = round($num_students_completed / $num_students * 100, 1);
-         $data .= '<li>';
-         $data .= $module->name;
-         $data .= ':&nbsp;';
-         $data .= $percentage_completed . '%';
-         $data .= '</li>';
-      }
-   }
-   $data .= '</ul>';
-   $data .= '</td></tr>';
-
-   $data .= "<tr><td><b><u>Resources Summary:</u></b></td><td>$Resources_Summary</td>";
-
-   $data .= '<tr><td>';
-   $data .= '...';
-   $data .= '</td></tr>';
-
-   $data .= "</table>";
-   $data .= "<input type='hidden' name='view' value='ProgressTracker' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
-   $data .= "</form>";
-
-   return $data;
-}
-
-/**
- * Build and display progress tracker main view
- *
- * @param int courseid
- * @return void
- */
-function display_progress_tracker_chart($courseid)
-{
-   global $CFG, $DB;
-
-   echo '<h2>' . 'Progress tracking (Staff view)' . '</h2>' . "\n";
-
-   $modules = get_course_modules_info($courseid);
-
-   echo '<h3>' . 'Recently accessed activities' . '</h3>' . "\n";
-   $recent_modules = get_course_modules_recently_accessed($courseid, 10, true);
-   echo '<table>';
-   echo '<tr><th>Activity</th><th>Last access</th><th>Student</th><th>Total accesses</th></tr>';
-   foreach($recent_modules as $moduleid=>$recent_details)
-   {
-      echo '<tr>';
-      echo '<td>' . $recent_details['activity'] . '</td>';
-      echo '<td>' . $recent_details['datetime'] . '</td>';
-      echo '<td>' . $recent_details['student'] . '</td>';
-      echo '<td>' . $recent_details['accesses'] . '</td>';
-      echo '<td>';
-      echo '</tr>';
-   }
-   echo '</table>';
-   echo '<p><small>You can also view the course <a href="' . $CFG->wwwroot . '/report/outline' . '?id=' . $courseid . '">Activity report</a> and <a href="' . $CFG->wwwroot . '/report/log' . '?id=' . $courseid . '">Log</a>.</small></p>';
-
-   echo '<br/><br/>' . "\n";
-
-   echo '<h3>' . 'Required activities completion' . '</h3>' . "\n";
-   $num_students = get_course_number_students($courseid);
-   echo '<p>' . 'Total students in course: ' . $num_students . '</p>';// getNumberOfUniqueStudents($courseid) != true?
-   echo '<table>';
-   echo '<tr><th>Activity</th><th>Students completed</th><th>Percentage completed</th></tr>';
-   foreach($modules as $module)
-   {
-      if($module->required)
-      {
-         $num_students_completed = get_course_module_students_completed($module->id);
-         echo '<tr>';
-         echo '<td>' . $module->name . '</td>';
-         echo '<td>';
-         echo $num_students_completed;
-         echo '</td>';
-         echo '<td>';
-         echo round($num_students_completed / $num_students * 100, 1);
-         echo '</td>';
-         echo '</tr>';
-      }
-   }
-   echo '</table>';
-   echo '<p><small>Note: Requires <a href="http://docs.moodle.org/23/en/Activity_completion">"Activity completion" enabled and setup</a> for activities as required.</small></p>';
-
-   echo '<br/><br/>' . "\n";
-   echo '<h3>' . 'Required activities summary' . '</h3>' . "\n";
-   echo '<p>...</p>';
-
-   echo '<br/><br/>' . "\n";
-   echo '<h3>' . 'For dev: Activities overview' . '</h3>' . "\n";
-   echo '<table>';
-   echo '<tr>';
-   foreach($modules[1] as $key=>$_)
-   {
-      echo '<th>' . $key . '</th>';
-   }
-   echo '</tr>';
-   foreach($modules as $module)
-   {
-      echo '<tr>';
-      foreach($module as $key=>$val)
-      {
-         echo '<td>' . $val . '</td>';
-      }
-      echo '</tr>';
-   }
-   echo '</table>';
-
-   return;
-}
-/** PROGRESS TAB END **/
 
 function display_localtion_based($courseid)
 {
@@ -549,10 +191,10 @@ function display_localtion_based($courseid)
    $data = 'Visited by Locations:';
    $data .= "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>$campus1_name</td><td>$c1_percentage%</td>";
-   $data .= "<tr><td>$campus2_name</td><td>$c2_percentage%</td>";
-   $data .= "<tr><td>$campus3_name</td><td>$c3_percentage%</td>";
-   $data .= "<tr><td>$outofcampus</td><td>$outofcampus_percentage%</td>";
+   $data .= "<tr><td>$campus1_name</td><td>$c1_percentage%</td></tr>";
+   $data .= "<tr><td>$campus2_name</td><td>$c2_percentage%</td></tr>";
+   $data .= "<tr><td>$campus3_name</td><td>$c3_percentage%</td></tr>";
+   $data .= "<tr><td>$outofcampus</td><td>$outofcampus_percentage%</td></tr>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='location' />";
    $data .= "<input type='hidden' name='data' value='$campusarray' />";
@@ -1534,4 +1176,4 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
-}
+}
