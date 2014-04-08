@@ -1,6 +1,6 @@
 <?php
 /** 
- * @Copyright 2013 King's College London?
+ * @Author 2013-2014 Brent.Cunningham@kcl.ac.uk
  * @ref http://docs.moodle.org/dev/Data_manipulation_API
  * @ref TODO http://docs.moodle.org/dev/Coding_style
  * @ref http://docs.moodle.org/dev/Database_schema_introduction
@@ -26,12 +26,15 @@ function addCSS()
 {
     return '<style type="text/css">
     h3 { margin-top: 1.5em; }
-    ul.block-analytics-progress { list-style-type: none; margin-left: 0; }    
-    ul.block-analytics-progress .summary { float: right; margin-top: 1em; /* to balance font-szie 200% of indicator */ }
+    table.block-analytics-progress  { width: 100%; font-size: 85%; }
+    table.block-analytics-progress tr, table.block-analytics-progress td { padding: 0; } 
     .indicator .done { color: darkgreen; font-weight: bold; font-size: 200%;  }
-    .indicator .notdone { color: red; font-weight: bold; font-size: 200%;  }    
+    .indicator .halfdone { color: orange; font-weight: bold; font-size: 200%;  }
+    .indicator .notdone { color: red; font-weight: bold; font-size: 200%;  }
+    table.block-analytics-progress td.summary { float: right; margin-top: 0.45em; }
     /* .done {  }
-    .notdone { } */
+    .notdone { }
+    .halfdone { } */
     .format_table th { text-align: left; }
     .format_table th, .format_table td { border: solid 1px silver; }    
     .chart { margin-top: 2em; } /* or hides the datatables bPaginate! */
@@ -46,6 +49,7 @@ function addCSS()
 function getUserId() 
 {    
     global $USER,$COURSE;
+    //return $USER->id;
     //return 3;
 //    return get_userid_from_username("student");    
     //return get_userid_from_username("dental-student-tester01"); 
@@ -78,7 +82,7 @@ function init_Log($courseid)
     global $LOG;
     // get log, creating global $LOG variable
     if( ! isset($LOG))
-        $LOG = getLog($courseid);//?            
+        $LOG = getLog($courseid,5); // use flag 5 to skip geo information, not needed for progress functions
 }
 
 /**
@@ -158,6 +162,21 @@ function get_course_format($courseid)
 }
 
 /**
+ * Helper: Try clena up MS Word characters
+ *
+ * @param string
+ * @return string
+ * @thanks http://stackoverflow.com/questions/7419302/converting-microsoft-word-special-characters-with-php 
+ */
+function tidyMSWord($string)
+{
+    $search = array('&','<','>','"',chr(212),chr(213),chr(210),chr(211),chr(209),chr(208),chr(201),chr(145),chr(146),chr(147),chr(148),chr(151),chr(150),chr(133),chr(194));
+    $replace = array('&amp;','&lt;','&gt;','&quot;','&#8216;','&#8217;','&#8220;','&#8221;','&#8211;','&#8212;','&#8230;','&#8216;','&#8217;','&#8220;','&#8221;','&#8211;','&#8212;','&#8230;','');
+
+    return str_replace($search, $replace, $string);
+}
+
+/**
  * Helper: Get list of modules (activities) in course, combined with useful attribute information
  *
  * @param int courseid
@@ -168,7 +187,7 @@ function get_course_modules_info($courseid)
 {
     global $CFG, $DB;
 
-    $sql = "SELECT  {course_modules}.id,  {course_modules}.section,  {course_modules}.module,  {modules}.name as modname,
+    $sql = "SELECT  {course_modules}.id, {course_modules}.instance, {course_modules}.section,  {course_modules}.module,  {modules}.name as modname,
             if (completion > 0 or completiongradeitemnumber is not null or completionview > 0 or completionexpected <> 0,true,false)
                 as required
             FROM {course_modules}, {modules}
@@ -184,8 +203,8 @@ function get_course_modules_info($courseid)
     for($c = 0; $c < count($result); $c++)
     {        
         $module_detail = get_coursemodule_from_id($result[$c]->modname, $result[$c]->id);
-        //$result[$c]->name = trim(htmlentities($module_detail->name));
-        $result[$c]->name = $module_detail->name;
+        //$result[$c]->name = $module_detail->name;
+        $result[$c]->name = tidyMSWord($module_detail->name); // htmlentities || htmlspecialchars?
         /*
         if (trim($result[$c]->name) == "") {
             $result[$c]->name = "Untitled"; 
@@ -630,7 +649,9 @@ function get_course_assignments($courseid)
         if ($module->modname == "assign") {
             $assignments[] = array(
                 'id' => $module->id,
-                'name' => $module->name,
+                'instance' => $module->instance,
+                'title' => $module->name,
+                'href' => $module->href,
             );
         }
     }
@@ -638,21 +659,42 @@ function get_course_assignments($courseid)
 }
 
 /**
- * Get assignment submission data
+ * Get assignments with submission data
  *
  * @param int courseid
  * @param int optional userid to check whether that specific user has submitted TODO
- * @return array
+ * @return array of assignments info with submissions numbers added
+ * @ref mdl_assign_submission
  */
 function get_course_assignment_submission_data($courseid, $userid = NULL)
 {
     global $DB;
+    
+    $num_students = get_course_number_students($courseid);
 
     $assignments =  get_course_assignments($courseid);       
-    // add submission info
-    foreach ($assignments as $assignment) {
-                
+    // add submissions info to assignments
+    for ($c = 0; $c < count($assignments); $c++) {         
+        $sql = "SELECT userid,status FROM {assign_submission} WHERE assignment = '".$assignments[$c]['instance']."';";
+        $results = $DB->get_records_sql($sql);
+        $submissions = 0; $drafts = 0; $user_status = NULL;
+        foreach ($results as $result) {
+            if (!is_student_on_course($courseid, $result->userid)) continue;
+            if ($result->status == "submitted") $submissions++;
+            if ($result->status == "draft") $drafts++;
+            if ($userid != NULL) {
+                if ($result->userid == $userid) $user_status = $result->status;
+            }
+        }
+        $assignments[$c]['submissions'] = $submissions;
+       // and add percentages
+       $assignments[$c]['percentage_submitted'] = round($assignments[$c]['submissions']/$num_students*100);
+       $assignments[$c]['drafts'] = $drafts;
+       $assignments[$c]['percentage_drafted'] = round($assignments[$c]['drafts']/$num_students*100);
+       
+        if ($userid != NULL) { if ($user_status == NULL) $user_status = "Not done"; $assignments[$c]['your_status'] = $user_status; }
     }
+    return $assignments;
 }
     
 /**
@@ -667,6 +709,7 @@ function display_progress_tracker_include($courseid)
    
    //$indicator_done = '<span class = "done">&#10003;</span>';
    $indicator_done = '<span class = "done">&#9679;</span>';
+   $indicator_halfdone = '<span class = "halfdone">&#9679;</span>';      
    $indicator_notdone = '<span class = "notdone">&#9679;</span>';   
    
    $data = "";   
@@ -683,6 +726,7 @@ function display_progress_tracker_include($courseid)
    $Recently_Accessed_Resources = '..';
    $Required_Resources_to_View = '..';
    $Resources_Summary = '..';
+   $Assignments_Summary = '..';
 
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab4';
 
@@ -691,8 +735,9 @@ function display_progress_tracker_include($courseid)
    $data .= '<tr title = "Recent accesses from all students"><td><b><u>Recently Accessed Resources:</u></b></td><td>'.$Recently_Accessed_Resources.'</td></tr>';
 
    $recent_accesses = get_course_modules_recently_accessed($courseid);
-   $data .= '<tr><td>';
-   $data .= '<ul class = "block-analytics-progress">';
+   $data .= '<tr><td colspan = "2">';
+   
+   $data .= '<table class = "block-analytics-progress">';
    foreach($recent_accesses as $index=>$access)
    {
       if ($MODE == "Staff") {
@@ -713,37 +758,43 @@ function display_progress_tracker_include($courseid)
               $class = "notdone";              
           }
       }       
-      $data .= '<li class="'.$class.'">';
-      $data .= '<span class="indicator" title = "'.$title.'">';
+       $data .= '<tr class="'.$class.'">';
+      $data .= '<td class="indicator">'; 
+      $data .= '<span title = "'.$title.'">';
       $data .= $indicator;
       $data .= '</span>';               
-      $data .= '&nbsp;';      
+      $date .= '/td>';
+      $data .= '<td class="activity">'; 
       $title = ($MODE == "Staff")?$access['student']:"Someone accessed ";
       $title .= ' '.$access['datetime'];
       $data .= '<a href="'.$access['href'].'" title = "'.$title.'">';
       $data .= $access['activity'];
       $data .= '</a>';
-      $data .= ':&nbsp;';
-      $data .= '<span class="summary" title = "Percentage of students who have accessed this activity">';
+      $date .= '/td>';
+      $data .= '<td class="summary">';       
+      $data .= '<span title = "Percentage of students who have accessed this activity">';
       $num_accesses = get_course_module_accesses($courseid, $index);      
       $percentage = round($num_accesses / $num_students * 100, 1);
       $data .= $percentage;
       $data .= '%';
       $data .= '</span>';              
-      $data .= '</li>';
+      $data .= '</td>';
+       $date .= '<tr>';      
    }
-   $data .= '</ul>';
+   $data .= '</table>';
+   
    $data .= '</td></tr>';
 
    $data .= "<tr><td><b><u>Required Resources to View:</u></b></td><td>$Required_Resources_to_View</td>";
+   
+   $data .= '<tr><td colspan = "2">';   
 
    $modules = get_course_modules_info($courseid);
    /* storing counts for summary */
    $requireds = 0; // to count required activities
    $student_completions = 0; // to count a student's completions   
    $this_display_limit = round(DISPLAY_LIMIT / 2); 
-   $data .= '<tr><td>';
-   $data .= '<ul class = "block-analytics-progress">';
+   $data .= '<table class = "block-analytics-progress">';
    $count = 0;
    foreach($modules as $module)
    {
@@ -776,25 +827,28 @@ function display_progress_tracker_include($courseid)
                       $class = "notdone";              
                   }                  
               }
-             
-             $data .= '<li class="'.$class.'">';
-              $data .= '<span class="indicator" title = "'.$title.'">';
+             $data .= '<tr class="'.$class.'">';
+             $data .= '<td class="indicator">';
+              $data .= '<span title = "'.$title.'">';
               $data .= $indicator;
               $data .= '</span>'; 
-              $data .= '&nbsp;';
+              $data .= '</td>';
+              $data .= '<td class="activity">';              
               $data .= '<a href="'.$module->href.'" title = "'.$title.'">';
              $data .= $module->name;
               $data .= '</a>';                          
-             $data .= ':&nbsp;';
-             $data .= '<span class="summary" title = "Percentage of students who have completed this activity">';
+              $data .= '</td>';
+             $data .= '<td class="summary">';              
+             $data .= '<span title = "Percentage of students who have completed this activity">';
              $data .= $percentage_completed . '%';
              $data .= '</span>';         
-             $data .= '</li>';
+              $data .= '</td>';             
+             $data .= '</tr>';
          }
          $count++;
       }
    }
-   $data .= '</ul>';
+   $data .= '</table>';
    if ($count >= $this_display_limit) { 
     $data .= '<p><small>'.'(Showing '.$this_display_limit.' of '.$count.')'.'</small></p>'; 
    }
@@ -802,7 +856,7 @@ function display_progress_tracker_include($courseid)
 
    $data .= "<tr><td><b><u>Required resources Summary:</u></b></td><td>$Resources_Summary</td></tr>";
 
-   $data .= '<tr><td>';
+   $data .= '<tr><td colspan="2">';
 
    if ($MODE == "Staff") {
        $total = count($modules);
@@ -816,6 +870,60 @@ function display_progress_tracker_include($courseid)
       $data .= '</p>';
    }
    $data .= '</td></tr>';
+   
+   $data .= "<tr><td><b><u>Assignment submissions:</u></b></td><td>$Assignments_Summary</td></tr>";
+   
+   $data .= '<tr><td colspan="2">';   
+   
+   $student_flag = $MODE == "Student"?getUserId():NULL;
+   $assignments = get_course_assignment_submission_data($courseid,$student_flag);
+
+   $data .= '<table class="block-analytics-progress">';
+   foreach ($assignments as $assignment) {       
+      if ($MODE == "Staff") {
+          $indicator = "";
+          $title = "";
+          $class = "";
+      }
+      else {
+          if ($assignment['your_status'] == "submitted") {
+              $indicator = $indicator_done;
+              $title = "You have submitted this assignment.";
+              $class = "done";
+          }
+          else if ($assignment['your_status'] == "draft") {
+              $indicator = $indicator_halfdone;
+              $title = "You have drafted this assignment.";
+              $class = "halfdone";
+          }
+          else {
+              $indicator = $indicator_notdone;
+              $title = "You have not yet done this assignment.";
+              $class = "notdone";              
+          }                  
+      }       
+              
+     $data .= '<tr class="'.$class.'">';
+     $data .= '<td class="indicator">';
+      $data .= '<span title = "'.$title.'">';
+      $data .= $indicator;
+      $data .= '</span>'; 
+      $data .= '</td>';
+      $data .= '<td class="activity">';              
+      $data .= '<a href="'.$assignment['href'].'" title = "'.$title.'">';
+     $data .= $assignment['title'];
+      $data .= '</a>';                          
+      $data .= '</td>';
+     $data .= '<td class="summary">';
+     $data .= '<span title = "Percentage of students who have submitted this assignment">';
+     $data .= $assignment['percentage_submitted'] . '%';
+     $data .= '</span>';         
+      $data .= '</td>';
+     $data .= '</tr>';       
+   }
+   $data .= '</table>';
+
+   $data .= '</td></tr>';   
 
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='ProgressTracker' />";
@@ -823,8 +931,11 @@ function display_progress_tracker_include($courseid)
    $data .= "</form>";
    
    // include and activate jquery datatables (for main content but included here so after jquery loaded)
-   $data .= '<script src="//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.js"></script>';
-   $data .= '<style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>';
+
+   if (!defined(JQUERY_DATATABLES_INCLUDED) || (defined(JQUERY_DATATABLES_INCLUDED) && JQUERY_DATATABLES_INCLUDED)) {
+       $data .= '<script src="//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.js"></script>';
+       $data .= '<style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>';
+   }
    $data .= '<style type="text/css">
                 .dataTables_length { float: right; opacity: 0.75; margin-top: -1em; }
                 .dataTables_info { opacity: 0.75; margin-top: 0.25em; }
@@ -1081,6 +1192,43 @@ function display_required_modules_student_overview_graph($data) {
    ';  
 }
 
+function display_assignment_submissions_student_graph($data)
+{
+   //echo '<h4>'.'Assignment submissions student graph'.'</h4>';
+   echo '<noscript>Requires JavaScript.</noscript>';    
+   
+   echo '
+   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawAssignmentSubmissionsStudentGraph);
+      function drawAssignmentSubmissionsStudentGraph() {
+        var data = google.visualization.arrayToDataTable([
+          ["Assignment", "Percentage of students submitted","Your progress"],
+          ';
+          foreach ($data as $c => $row) {
+              echo '['.'"'.$row['assignment'].'"'.','.$row['percentage'].','.$row['student_percent'].']'.',';
+              echo "\n";
+          }
+          echo '
+        ]);
+
+        var options = {
+          title: "Assignment submissions",
+          hAxis: {title: "Assignment"},
+          seriesType: "bars",
+          series: {0: {type: "bars", color: "green"}, 1: {type: "bars", color: "blue"}},
+          vAxis: {ticks: [0,25,50,75,100], title: "%"} 
+        };
+
+        var chart = new google.visualization.ColumnChart(document.getElementById("assignment_submissions_student_graph_div"));
+        chart.draw(data, options);
+      }
+        </script>
+    <div id="assignment_submissions_student_graph_div" class="chart" style="width: 100%; height: auto; min-height: 300px"></div>    
+    ';    
+}
+
 /**
  * Build and display progress analytics main view
  *
@@ -1270,50 +1418,67 @@ function display_progress_tracker_chart_include($courseid)
       );
       display_required_modules_student_overview_graph($data);
    }
-       
-   
-   /* 
-   echo '<br/><br/>' . "\n";
-   echo '<h3>' . 'Required activities overview' . '</h3>' . "\n";
-   $requireds = 0; // to count total required activities
-   echo '<table>';
-   echo '<tr>';
-   $include_columns = array('modname','required','name');
-   foreach($modules[1] as $key=>$_)
-   { 
-      if (in_array($key,$include_columns)) {
-          echo '<th>';
-          if ($key == "modname") $key = "type";
-          echo ucfirst($key);
-          echo '</th>';
-      }
-   }
-   echo '</tr>';
-   foreach($modules as $module)
-   {
-      echo '<tr>';
-      foreach($module as $key=>$val)
-      {
-        if (in_array($key,$include_columns)) {
-            // do some counting here
-           if($key == 'required' && $val == "1") $requireds++;
-            
-            echo '<td>';
-            if ($key == "required") $val = ($val==0)?"No":"Yes";
-            echo  $val;
-            echo '</td>';
-        }
-      }
-      echo '</tr>';
-   }
-   echo '</table>';
-   */
-   
+          
    echo '<br/><br/>' . "\n";
    
    echo '<h3>' . 'Assignment submissions' . '</h3>' . "\n";
 
-   get_course_assignment_submission_data($courseid);   
+   $student_flag = $MODE == "Student"?getUserId():NULL;
+   $assignments = get_course_assignment_submission_data($courseid,$student_flag);
+   
+   $data = array(); // data for chart
+   // make table, also computing chart data
+   $include_fields = array('title','submissions'/*,'drafts','percentage_drafted'*/,'percentage_submitted','your_status');   
+   echo '<table id = "table_assignments" class = "datatable format_table">';
+   echo '<thead>';   
+   echo '<tr>';
+   foreach ($assignments[0] as $heading => $_) {
+       if (!in_array($heading,$include_fields)) continue;
+       echo '<th>'.(ucfirst(str_replace('_',' ',$heading))).'</th>';       
+   }
+   echo '</thead>';   
+   echo '</tr>';
+   echo '<tbody>';
+   $c = 0; 
+   foreach ($assignments as $assignment) {
+       
+       // store chart data
+       $data[$c] = array();
+       $data[$c]['assignment'] = $assignments[$c]['title'];
+       $data[$c]['percentage'] = $assignments[$c]['percentage_submitted'];       
+       if ($MODE == "Student") {
+        if ($assignments[$c]['your_status']=="submitted") $data[$c]['student_percent'] = 100;
+        else if ($assignments[$c]['your_status']=="draft") $data[$c]['student_percent'] = 50;
+        else $data[$c]['student_percent'] = 0;
+       }
+       
+       echo '<tr>';
+       // output fields, adding icon and links to title       
+       foreach ($assignment as $field => $val) {
+           if (!in_array($field,$include_fields)) continue;
+           echo '<td>';
+           if ($field == "title") {
+               echo '<a href="'.$assignments[$c]['href'].'" title = "'.$assignments[$c]['title'].'">';         
+               echo '<img src = "'.$OUTPUT->pix_url('icon', 'assign').'" alt = "" title = "Assignment"/>'.'&nbsp;';
+           }           
+           echo ucfirst($val);
+           if ($field == "title") {
+               echo '</a>';
+           }
+           echo '</td>';
+       }
+       $c++;
+       echo '</tr>';       
+   }
+   echo '</tbody>';
+   echo '</table>';
+   
+   if ($MODE == "Student") {
+       display_assignment_submissions_student_graph($data);
+   }
+   else if ($MODE == "Staff") {
+       ; // TODO
+   }   
    
    return;
 }
@@ -1387,7 +1552,7 @@ function show_course_views_summary($courseid) {
    
    echo '<p><small><strong>Note:</strong> Shows only <em>current</em> enrollments.</small></p>';
    
-   echo get_roles_summary($courseid);
+   //echo get_roles_summary($courseid);
 
    return;
 }
