@@ -57,7 +57,8 @@ function display_tabs($courseid, $htmlcode)
    $tab4 = "Progress Analytics";
    $tab5 = "Learning Design";
 
-   $Jurl = $CFG->wwwroot . '/blocks/keats';
+   $Jurl = $CFG->wwwroot . '/blocks/keats';      
+   
    $htmlScript = '<link rel="stylesheet" href="' . $Jurl . '/jquery/themes/base/jquery.ui.all.css">
                      <script src="' . $Jurl . '/jquery/jquery-1.9.1.js"></script>
                      <script src="' . $Jurl . '/jquery/ui/jquery.ui.core.js"></script>
@@ -85,9 +86,16 @@ function display_tabs($courseid, $htmlcode)
                                    }
                                    .ui-accordion .ui-accordion-content {
 	                               padding:10px;
-	                               font-size:50%;/*75%;*/
+	                               /*font-size:75%;*/
                                    }
+                                   .ui-accordion h3{ font-size: 75%; }
+                                   .ui-accordion form { font-size: 60%; }
                     </style>';
+
+    $htmlScript .= '
+       <script src="//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.js"></script>
+       <style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>
+    '; define("JQUERY_DATATABLES_INCLUDED",true);
 
    $tabs = $htmlScript . '<div id="accordion">
 			<h3>' . $tab1 . '</h3>
@@ -367,6 +375,7 @@ function display_pageview_chart($courseid, $pageview)
    $DateStack = $DataStruct["DateOnly"];
    $el = count($DateStack);
 
+   /*
    $Fdate = $DateStack[$el - 1];
    $Ldate = $DateStack[0];
    $allRecNo = $DataStruct["RecordsNo"];
@@ -412,6 +421,9 @@ function display_pageview_chart($courseid, $pageview)
 	            </tr>
             </table>";
    echo $htmlTable;
+   */
+   show_course_views_summary($courseid);
+   
    // MotionChart is here...
    ?>
 	<p><h1>Motion Chart:</h1></p>
