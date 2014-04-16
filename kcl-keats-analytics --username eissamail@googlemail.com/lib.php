@@ -22,31 +22,16 @@
  * @copyright 2013 Eissa Creations Limited
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
- 
-/* error reporting for development */
-error_reporting(7);
-ini_set('display_errors', 'On');
- 
+
 defined('MOODLE_INTERNAL') || die();
-
-/* include progress and related functions in include file and map functions */
 include_once("lib_progress.php");
-function display_progress_tracker($courseid)
-{
-    return display_progress_tracker_include($courseid);
-} 
-function display_progress_tracker_chart($courseid)
-{
-    return display_progress_tracker_chart_include($courseid);
-}
-
 
 function display_tabs($courseid, $htmlcode)
 {
    global $CFG, $DB;
 
    $pageviewdata = display_pageview($courseid);
-   $formanalyticsdata = display_form_analytics($courseid);
+   $formanalyticsdata = display_forum_analytics($courseid);
    $locationsdata = display_localtion_based($courseid);
    $ProgressTracker = display_progress_tracker($courseid);
    $LearningDesign = display_learning_design($courseid);
@@ -57,10 +42,9 @@ function display_tabs($courseid, $htmlcode)
    $tab4 = "Progress Analytics";
    $tab5 = "Learning Design";
 
-   $Jurl = $CFG->wwwroot . '/blocks/keats';      
-   
-   $htmlScript = '<link rel="stylesheet" href="' . $Jurl . '/jquery/themes/base/jquery.ui.all.css">
-                     <script src="' . $Jurl . '/jquery/jquery-1.9.1.js"></script>
+   $Jurl = $CFG->wwwroot . '/blocks/keats';
+   $htmlScript = '   <link rel="stylesheet" href="' . $Jurl . '/jquery/themes/base/jquery.ui.all.css">
+                     <script src="' . $Jurl . '/jquery/jquery-1.10.2.js"></script>
                      <script src="' . $Jurl . '/jquery/ui/jquery.ui.core.js"></script>
                      <script src="' . $Jurl . '/jquery/ui/jquery.ui.widget.js"></script>
                      <script src="' . $Jurl . '/jquery/ui/jquery.ui.accordion.js"></script>
@@ -81,21 +65,14 @@ function display_tabs($courseid, $htmlcode)
                     </script>
                     <style>
                           body {";
-   $htmlScript = $htmlScript . '/*font-family: "Trebuchet MS", "Helvetica", "Arial",  "Verdana", "sans-serif";
-	                               font-size: 62.5%;*/
+   $htmlScript = $htmlScript . 'font-family: "Trebuchet MS", "Helvetica", "Arial",  "Verdana", "sans-serif";
+	                               font-size: 62.5%;
                                    }
                                    .ui-accordion .ui-accordion-content {
 	                               padding:10px;
-	                               /*font-size:75%;*/
+	                               font-size:75%;
                                    }
-                                   .ui-accordion h3{ font-size: 75%; }
-                                   .ui-accordion form { font-size: 60%; }
                     </style>';
-
-    $htmlScript .= '
-       <script src="//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.js"></script>
-       <style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>
-    '; define("JQUERY_DATATABLES_INCLUDED",true);
 
    $tabs = $htmlScript . '<div id="accordion">
 			<h3>' . $tab1 . '</h3>
@@ -127,16 +104,19 @@ function display_pageview($courseid)
    $allchecked = in_array('all', $pageview)? 'checked': null;
 
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab1';
+   $urlPref = $CFG->wwwroot . '/blocks/keats/urlforward.php';
    $data = "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>*</td><td>Staff: 0</td></tr>";
-   $data .= "<tr><td>*</td><td>Students: 0</td></tr>";
-   $data .= "<tr><td>*</td><td>All: 0</td></tr>";
+   $data .= "<tr><td>*</td><td>Staff: 0</td>";
+   $data .= "<tr><td>*</td><td>Students: 0</td>";
+   $data .= "<tr><td>*</td><td>All: 0</td>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='page' />";
+   $data .= "<input type='hidden' name='url' value='$url' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
-
+   if(isset($_SESSION['View']))
+      unset($_SESSION['View']);
    return $data;
 }
 
@@ -145,18 +125,29 @@ function display_learning_design($courseid)
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab5';
    $data = "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>Click on \"More\" to view the chart.</td></tr>";
+   $data .= "<tr><td>Click on \"More\" to view the chart.</td>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='learningdesign' />";
+   $data .= "<input type='hidden' name='url' value='$url' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
 }
 
-function display_learning_design_chart($courseid)
+function display_learning_design_chart($courseid, $MinDate = 0, $MaxDate = 0)
 {
    echo "Under Construction...";
+}
+
+function display_progress_tracker($courseid)
+{
+   return display_progress_tracker_include($courseid);
+}
+
+function display_progress_tracker_chart($courseid, $MinDate = 0, $MaxDate = 0)
+{
+   return display_progress_tracker_chart_include($courseid);
 }
 
 function display_localtion_based($courseid)
@@ -199,20 +190,21 @@ function display_localtion_based($courseid)
    $data = 'Visited by Locations:';
    $data .= "<form action='$url' method='post'>";
    $data .= "<table>";
-   $data .= "<tr><td>$campus1_name</td><td>$c1_percentage%</td></tr>";
-   $data .= "<tr><td>$campus2_name</td><td>$c2_percentage%</td></tr>";
-   $data .= "<tr><td>$campus3_name</td><td>$c3_percentage%</td></tr>";
-   $data .= "<tr><td>$outofcampus</td><td>$outofcampus_percentage%</td></tr>";
+   $data .= "<tr><td>$campus1_name</td><td>$c1_percentage%</td>";
+   $data .= "<tr><td>$campus2_name</td><td>$c2_percentage%</td>";
+   $data .= "<tr><td>$campus3_name</td><td>$c3_percentage%</td>";
+   $data .= "<tr><td>$outofcampus</td><td>$outofcampus_percentage%</td>";
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='location' />";
    $data .= "<input type='hidden' name='data' value='$campusarray' />";
+   $data .= "<input type='hidden' name='url' value='$url' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
 }
 
-function display_form_analytics($courseid)
+function display_forum_analytics($courseid)
 {
    global $CFG, $DB;
 
@@ -257,20 +249,22 @@ function display_form_analytics($courseid)
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab3';
    $data .= "<form action='$url' method='post'>";
    $data .= "<input type='hidden' name='view' value='forum' />";
+   $data .= "<input type='hidden' name='url' value='$url' />";
    $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
 }
 
-
-function display_pageview_chart($courseid, $pageview)
+function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
 {
    global $DB, $CFG;
-   //put calculation code here...
+
    set_time_limit(300);
    $DataStruct = getLog($courseid, 5);
-   ///*
+
+   $arrDate = $DataStruct["Date/Time"];
+
    $Otypes = $DataStruct["User_Type"];
    $Odates = $DataStruct["DateOnly"];
    $Onames = $DataStruct["Users"];
@@ -279,154 +273,186 @@ function display_pageview_chart($courseid, $pageview)
    $dates = array_reverse($Odates);
    $names = array_reverse($Onames);
 
+   date_default_timezone_set('GMT');
+
+   if($MinDate == 0 || $MaxDate == 0)
+   {
+      $MinDate = reset($arrDate);
+      $MaxDate = end($arrDate);
+      $UnixMinDate = strtotime($MinDate);
+      $UnixMaxDate = strtotime($MaxDate);
+   }
+   else
+   {
+      $GMMinDate = str_replace("/", "-", $MinDate);
+      $GMMaxDate = str_replace("/", "-", $MaxDate);
+      $UnixMinDate = strtotime($GMMinDate);
+      $UnixMaxDate = strtotime($GMMaxDate);
+   }
+
+   //motion-chart painting code
+   $unique_others = 0;
    $unique_students = 0;
    $unique_staff = 0;
+   $others_pageviews = 0;
    $student_pageviews = 0;
    $staff_pageviews = 0;
+   $daily_others = array();
    $daily_students = array();
    $daily_staff = array();
 
    for($i = 0; $i < sizeof($dates); $i++)
    {
-      if($dates[$i + 1] == $dates[$i])
-      {
-         if($types[$i] == "Staff")
-         {
-            $staff_pageviews++;
+      $Fdate = $arrDate[$i];
+      $timestamp = strtotime($Fdate);
 
-            if( ! in_array($names[$i], $daily_staff))
+      if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
+      {
+         if($dates[$i + 1] == $dates[$i])
+         {
+            if($types[$i] == "Staff")
             {
-               array_push($daily_staff, $names[$i]);
-               $unique_staff++;
+               $staff_pageviews++;
+
+               if( ! in_array($names[$i], $daily_staff))
+               {
+                  array_push($daily_staff, $names[$i]);
+                  $unique_staff++;
+               }
+            }
+            elseif($types[$i] == "Student")
+            {
+               $student_pageviews++;
+
+               if( ! in_array($names[$i], $daily_students))
+               {
+                  array_push($daily_students, $names[$i]);
+                  $unique_students++;
+               }
+            }
+            else
+            {
+               $others_pageviews++;
+
+               if( ! in_array($names[$i], $daily_others))
+               {
+                  array_push($daily_others, $names[$i]);
+                  $unique_others++;
+               }
             }
          }
          else
          {
-            $student_pageviews++;
-
-            if( ! in_array($names[$i], $daily_students))
+            if($types[$i] == "Staff")
             {
-               array_push($daily_students, $names[$i]);
-               $unique_students++;
-            }
-         }
-      }
-      else
-      {
-         if($types[$i] == "Staff")
-         {
-            $staff_pageviews++;
+               $staff_pageviews++;
 
-            if( ! in_array($names[$i], $daily_staff))
+               if( ! in_array($names[$i], $daily_staff))
+               {
+                  array_push($daily_staff, $names[$i]);
+                  $unique_staff++;
+               }
+               //echo "Date: $dates[$i], Total student visits: $student_pageviews, No of Unique students: $unique_students, Names: " . print_r($daily_students, true) . "<br />";
+               //echo "Date: $dates[$i], Total staff visits: $staff_pageviews, No of Unique staff: $unique_staff, Names: " . print_r($daily_staff, true) . "<br /><br />";
+
+               $day = date("d", strtotime($dates[$i]));
+               $month = date("m", strtotime($dates[$i]));
+               $year = date("Y", strtotime($dates[$i]));
+               $TheDate = mktime(0, 0, 0, $month, $day, $year);
+               //$GoogleMDate = gmdate("Y,m,d", $TheDate);
+               $GoogleMDate = "$year,$month-1,$day";
+               $finalURL = $finalURL . "['Students', new Date($GoogleMDate), $unique_students, $student_pageviews],\n";
+               $finalURL = $finalURL . "['Staff', new Date($GoogleMDate), $unique_staff, $staff_pageviews],\n";
+               $finalURL = $finalURL . "['Other Users', new Date($GoogleMDate), $unique_others, $others_pageviews],\n";
+
+               $unique_students = 0;
+               $unique_staff = 0;
+               $unique_others = 0;
+               $student_pageviews = 0;
+               $staff_pageviews = 0;
+               $others_pageviews = 0;
+               $daily_students = array();
+               $daily_staff = array();
+               $daily_others = array();
+            }
+            elseif($types[$i] == "Student")
             {
-               array_push($daily_staff, $names[$i]);
-               $unique_staff++;
+               $student_pageviews++;
+
+               if( ! in_array($names[$i], $daily_students))
+               {
+                  array_push($daily_students, $names[$i]);
+                  $unique_students++;
+               }
+
+               //echo "Date: $dates[$i], Total student visits: $student_pageviews, No of Unique students: $unique_students, Names: " . print_r($daily_students, true) . "<br />";
+               //echo "Date: $dates[$i], Total staff visits: $staff_pageviews, No of Unique staff: $unique_staff, Names: " . print_r($daily_staff, true) . "<br /><br />";
+
+               $day = date("d", strtotime($dates[$i]));
+               $month = date("m", strtotime($dates[$i]));
+               $year = date("Y", strtotime($dates[$i]));
+               $TheDate = mktime(0, 0, 0, $month, $day, $year);
+               //$GoogleMDate = gmdate("Y,m,d", $TheDate);
+               $GoogleMDate = "$year,$month-1,$day";
+               $finalURL = $finalURL . "['Students', new Date($GoogleMDate), $unique_students, $student_pageviews],\n";
+               $finalURL = $finalURL . "['Staff', new Date($GoogleMDate), $unique_staff, $staff_pageviews],\n";
+               $finalURL = $finalURL . "['Other Users', new Date($GoogleMDate), $unique_others, $others_pageviews],\n";
+
+               $unique_students = 0;
+               $unique_staff = 0;
+               $unique_others = 0;
+               $student_pageviews = 0;
+               $staff_pageviews = 0;
+               $others_pageviews = 0;
+               $daily_students = array();
+               $daily_staff = array();
+               $daily_others = array();
             }
-            //echo "Date: $dates[$i], Total student visits: $student_pageviews, No of Unique students: $unique_students, Names: " . print_r($daily_students, true) . "<br />";
-            //echo "Date: $dates[$i], Total staff visits: $staff_pageviews, No of Unique staff: $unique_staff, Names: " . print_r($daily_staff, true) . "<br /><br />";
-
-            $day = date("d", strtotime($dates[$i]));
-            $month = date("m", strtotime($dates[$i]));
-            $year = date("Y", strtotime($dates[$i]));
-            $TheDate = mktime(0, 0, 0, $month, $day, $year);
-            //$GoogleMDate = gmdate("Y,m,d", $TheDate);
-            $GoogleMDate = "$year,$month-1,$day";
-            $finalURL = $finalURL . "['Students', new Date($GoogleMDate), $unique_students, $student_pageviews],\n";
-            $finalURL = $finalURL . "['Staff', new Date($GoogleMDate), $unique_staff, $staff_pageviews],\n";
-
-            $unique_students = 0;
-            $unique_staff = 0;
-            $student_pageviews = 0;
-            $staff_pageviews = 0;
-            $daily_students = array();
-            $daily_staff = array();
-         }
-         else
-         {
-            $student_pageviews++;
-
-            if( ! in_array($names[$i], $daily_students))
+            else
             {
-               array_push($daily_students, $names[$i]);
-               $unique_students++;
+               $others_pageviews++;
+
+               if( ! in_array($names[$i], $daily_others))
+               {
+                  array_push($daily_others, $names[$i]);
+                  $unique_others++;
+               }
+
+               //echo "Date: $dates[$i], Total student visits: $student_pageviews, No of Unique students: $unique_students, Names: " . print_r($daily_students, true) . "<br />";
+               //echo "Date: $dates[$i], Total staff visits: $staff_pageviews, No of Unique staff: $unique_staff, Names: " . print_r($daily_staff, true) . "<br /><br />";
+
+               $day = date("d", strtotime($dates[$i]));
+               $month = date("m", strtotime($dates[$i]));
+               $year = date("Y", strtotime($dates[$i]));
+               $TheDate = mktime(0, 0, 0, $month, $day, $year);
+               //$GoogleMDate = gmdate("Y,m,d", $TheDate);
+               $GoogleMDate = "$year,$month-1,$day";
+               $finalURL = $finalURL . "['Students', new Date($GoogleMDate), $unique_students, $student_pageviews],\n";
+               $finalURL = $finalURL . "['Staff', new Date($GoogleMDate), $unique_staff, $staff_pageviews],\n";
+               $finalURL = $finalURL . "['Other Users', new Date($GoogleMDate), $unique_others, $others_pageviews],\n";
+
+               $unique_students = 0;
+               $unique_staff = 0;
+               $unique_others = 0;
+               $student_pageviews = 0;
+               $staff_pageviews = 0;
+               $others_pageviews = 0;
+               $daily_students = array();
+               $daily_staff = array();
+               $daily_others = array();
             }
-
-            //echo "Date: $dates[$i], Total student visits: $student_pageviews, No of Unique students: $unique_students, Names: " . print_r($daily_students, true) . "<br />";
-            //echo "Date: $dates[$i], Total staff visits: $staff_pageviews, No of Unique staff: $unique_staff, Names: " . print_r($daily_staff, true) . "<br /><br />";
-
-            $day = date("d", strtotime($dates[$i]));
-            $month = date("m", strtotime($dates[$i]));
-            $year = date("Y", strtotime($dates[$i]));
-            $TheDate = mktime(0, 0, 0, $month, $day, $year);
-            //$GoogleMDate = gmdate("Y,m,d", $TheDate);
-            $GoogleMDate = "$year,$month-1,$day";
-            $finalURL = $finalURL . "['Students', new Date($GoogleMDate), $unique_students, $student_pageviews],\n";
-            $finalURL = $finalURL . "['Staff', new Date($GoogleMDate), $unique_staff, $staff_pageviews],\n";
-
-            $unique_students = 0;
-            $unique_staff = 0;
-            $student_pageviews = 0;
-            $staff_pageviews = 0;
-            $daily_students = array();
-            $daily_staff = array();
          }
       }
    }
+   //Summary table is here...
    $DateStack = $DataStruct["DateOnly"];
    $el = count($DateStack);
-
-   /*
    $Fdate = $DateStack[$el - 1];
    $Ldate = $DateStack[0];
-   $allRecNo = $DataStruct["RecordsNo"];
-   $AllUsersTypes = $DataStruct["User_Type"];
-   $AllUsersCount = array_count_values($AllUsersTypes);
-
-   $NoOfEnrolledStudents = $AllUsersCount["Student"];
-   $NoOfActvStudents = getNumberOfUniqueStudents($courseid);//NoUniqueStudents
-   $NoOfInactStudents = $NoOfEnrolledStudents - $NoOfActvStudents;
-
-   $NoOfActOtherUsers = $AllUsersCount["Staff"];
-   $NoOfOtherUsers = getNumberOfUniqueStaff($courseid);//Jonathan will get this from Fong later.....
-   $NoOfInactOtherUsers = $NoOfOtherUsers - $NoOfActOtherUsers;
-
-   $TNoOfUsers = $NoOfOtherUsers + $NoOfEnrolledStudents;
-   $TNoOfActUsers = $NoOfActOtherUsers + $NoOfActvStudents;
-   $TNoOfInactUsers = $NoOfInactOtherUsers + $NoOfInactStudents;
-
-   $htmlTable = '<p><h1>Summary Table:</h1></p><br /><table border="1" bordercolor="#a00709" style="background-color:#ffffff" width="100%" cellpadding="3" cellspacing="0">';
-   $htmlTable = $htmlTable . "	<tr>
-		            <td class='tdTitle'>As of: $Ldate</td>
-		            <td class='tdTitle'>Enrolled:</td>
-		            <td class='tdTitle'>Who have already viewed this course:</td>
-		            <td class='tdTitle'>Who have not yet viewed this course:</td>
-	            </tr>
-	            <tr>
-		            <td class='tdTitle'>Number of student-users:</td>
-		            <td>$NoOfEnrolledStudents</td>
-		            <td>$NoOfActvStudents</td>
-		            <td>$NoOfInactStudents</td>
-	            </tr>
-	            <tr>
-		            <td class='tdTitle'>Number of other users:</td>
-		            <td>$NoOfOtherUsers</td>
-		            <td>$NoOfActOtherUsers</td>
-		            <td>$NoOfInactOtherUsers</td>
-	            </tr>
-                <tr>
-		            <td class='tdTitle'>Total users:</td>
-		            <td>$TNoOfUsers</td>
-		            <td>$TNoOfActUsers</td>
-		            <td>$TNoOfInactUsers</td>
-	            </tr>
-            </table>";
-   echo $htmlTable;
-   */
-   show_course_views_summary($courseid);
-   
+   show_course_views_summary($courseid, $Ldate);
    // MotionChart is here...
    ?>
-	<p><h1>Motion Chart:</h1></p>
+	<h1>Motion Chart:</h1>
     <script type="text/javascript" src="//www.google.com/jsapi"></script>
 	<script type="text/javascript">
 	google.load('visualization', '1', {packages: ['motionchart']});
@@ -461,19 +487,27 @@ function display_pageview_chart($courseid, $pageview)
 	</script>
 	<div id="visualization" style="width:910px;height:400px;margin:auto;padding-top:50px;"></div><br />
 	<?php
-   //The TreeMap is here...
+   //The TreeMap painting code and html code are here...
    $finalURL = "['Learning Resource', 'Information','Accessed'],\n";
    $finalURL = $finalURL . "['Learning Resource', null, 0],\n";
+
+   $StudentfinalURL = $finalURL;
+   $StafffinalURL = $finalURL;
+
    $SearchedActions = array("book view", "page view", "url view", "resource view");
    $RecCount = count($DataStruct["Action"]);
    $bookviewCount = 0;
    $pageviewCount = 0;
    $urlviewCount = 0;
    $resourceviewCount = 0;
+   $StaffbookviewCount = 0;
+   $StaffpageviewCount = 0;
+   $StaffurlviewCount = 0;
+   $StaffresourceviewCount = 0;
+
    for($C = 0; $C <= $RecCount; $C++)
    {
-      $VUser = $DataStruct["User_Type"][$C];
-      $TestUser = $DataStruct["Users"][$C];
+      $SelUserType = $DataStruct["User_Type"][$C];
 
       $V0 = str_replace(">", " ", $DataStruct["Action"][$C]);
       $V1 = $SearchedActions[0];//"book view";
@@ -481,69 +515,140 @@ function display_pageview_chart($courseid, $pageview)
       $V3 = $SearchedActions[2];//"url view";
       $V4 = $SearchedActions[3];//"resource view";
 
-      if($V1 == $V0)
-      {
-         if($DataStruct["Information"][$C] != "")
-         {
-            $arrBookViewInfo[$bookviewCount] = $DataStruct["Information"][$C];
-         }
-         else
-         {
-            $arrResourceViewInfo[$bookviewCount] = "N/A";
-         }
-         $bookviewCount++;
-      }
+      $Fdate = $arrDate[$C];
+      $timestamp = strtotime($Fdate);
 
-      if($V2 == $V0)
+      if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
       {
-         if($DataStruct["Information"][$C] != "")
+         if($SelUserType == "Student")
          {
-            $arrPageViewInfo[$pageviewCount] = $DataStruct["Information"][$C];
-         }
-         else
-         {
-            $arrResourceViewInfo[$pageviewCount] = "N/A";
-         }
-         $pageviewCount++;
-      }
+            if($V1 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrBookViewInfo[$bookviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrResourceViewInfo[$bookviewCount] = "N/A";
+               }
+               $bookviewCount++;
+            }
 
-      if($V3 == $V0)
-      {
-         if($DataStruct["Information"][$C] != "")
-         {
-            $arrURLViewInfo[$urlviewCount] = $DataStruct["Information"][$C];
-         }
-         else
-         {
-            $arrResourceViewInfo[$urlviewCount] = "N/A";
-         }
-         $urlviewCount++;
-      }
+            if($V2 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrPageViewInfo[$pageviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrResourceViewInfo[$pageviewCount] = "N/A";
+               }
+               $pageviewCount++;
+            }
 
-      if($V4 == $V0)
-      {
-         if($DataStruct["Information"][$C] != "")
-         {
-            $arrResourceViewInfo[$resourceviewCount] = $DataStruct["Information"][$C];
+            if($V3 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrURLViewInfo[$urlviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrResourceViewInfo[$urlviewCount] = "N/A";
+               }
+               $urlviewCount++;
+            }
+
+            if($V4 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrResourceViewInfo[$resourceviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrResourceViewInfo[$resourceviewCount] = "N/A";
+               }
+               $resourceviewCount++;
+            }
          }
-         else
+         else //Staff and Others
          {
-            $arrResourceViewInfo[$resourceviewCount] = "N/A";
+            if($V1 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffBookViewInfo[$StaffbookviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffResourceViewInfo[$StaffbookviewCount] = "N/A";
+               }
+               $StaffbookviewCount++;
+            }
+
+            if($V2 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffPageViewInfo[$StaffpageviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffResourceViewInfo[$StaffpageviewCount] = "N/A";
+               }
+               $StaffpageviewCount++;
+            }
+
+            if($V3 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffURLViewInfo[$StaffurlviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffResourceViewInfo[$StaffurlviewCount] = "N/A";
+               }
+               $StaffurlviewCount++;
+            }
+
+            if($V4 == $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffResourceViewInfo[$StaffresourceviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffResourceViewInfo[$StaffresourceviewCount] = "N/A";
+               }
+               $StaffresourceviewCount++;
+            }
          }
-         $resourceviewCount++;
       }
    }
-   $finalURL = $finalURL . "['Book view ($bookviewCount)','Learning Resource',$bookviewCount]" . ",\n";
-   $finalURL = $finalURL . "['Page view ($pageviewCount)','Learning Resource',$pageviewCount]" . ",\n";
-   $finalURL = $finalURL . "['URL view ($urlviewCount)','Learning Resource',$urlviewCount]" . ",\n";
-   $finalURL = $finalURL . "['Resource view ($resourceviewCount)','Learning Resource',$resourceviewCount]" . ",\n";
+
+   $StudentfinalURL = $StudentfinalURL . "['Book view ($bookviewCount)','Learning Resource',$bookviewCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Page view ($pageviewCount)','Learning Resource',$pageviewCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['URL view ($urlviewCount)','Learning Resource',$urlviewCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Resource view ($resourceviewCount)','Learning Resource',$resourceviewCount]" . ",\n";
+
+   $StafffinalURL = $StafffinalURL . "['Book view ($StaffbookviewCount)','Learning Resource',$StaffbookviewCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Page view ($StaffpageviewCount)','Learning Resource',$StaffpageviewCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['URL view ($StaffurlviewCount)','Learning Resource',$StaffurlviewCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Resource view ($StaffresourceviewCount)','Learning Resource',$StaffresourceviewCount]" . ",\n";
+
+   //Student TreeMap Array builders
    if($arrBookViewInfo != null)
    {
       $arrBookViewInfoU = array_count_values($arrBookViewInfo);
       foreach($arrBookViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $finalURL = $finalURL . "['$index ($value)','Book view ($bookviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Book view ($bookviewCount)',$value]" . ",\n";
       }
    }
 
@@ -553,7 +658,7 @@ function display_pageview_chart($courseid, $pageview)
       foreach($arrPageViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $finalURL = $finalURL . "['$index ($value)','Page view ($pageviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Page view ($pageviewCount)',$value]" . ",\n";
       }
    }
 
@@ -563,7 +668,7 @@ function display_pageview_chart($courseid, $pageview)
       foreach($arrURLViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $finalURL = $finalURL . "['$index ($value)','URL view ($urlviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','URL view ($urlviewCount)',$value]" . ",\n";
       }
    }
 
@@ -573,11 +678,55 @@ function display_pageview_chart($courseid, $pageview)
       foreach($arrResourceViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $finalURL = $finalURL . "['$index ($value)','Resource view ($resourceviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Resource view ($resourceviewCount)',$value]" . ",\n";
       }
    }
+
+   //Staff and Others TreeMap Array builders
+
+   if($arrStaffBookViewInfo != null)
+   {
+      $arrStaffBookViewInfoU = array_count_values($arrStaffBookViewInfo);
+      foreach($arrStaffBookViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value)','Book view ($StaffbookviewCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrStaffPageViewInfo != null)
+   {
+      $arrStaffPageViewInfoU = array_count_values($arrStaffPageViewInfo);
+      foreach($arrStaffPageViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value)','Page view ($StaffpageviewCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrStaffURLViewInfo != null)
+   {
+      $arrStaffURLViewInfoU = array_count_values($arrStaffURLViewInfo);
+      foreach($arrStaffURLViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value)','URL view ($StaffurlviewCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrStaffResourceViewInfo != null)
+   {
+      $arrStaffResourceViewInfoU = array_count_values($arrStaffResourceViewInfo);
+      foreach($arrStaffResourceViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value)','Resource view ($StaffresourceviewCount)',$value]" . ",\n";
+      }
+   }
+
+
    ?>
-   <p><h1>TreeMap Chart:</h1></p>
+   <h1>Students TreeMap Chart:</h1>
    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
                     <script type="text/javascript">
                         google.load("visualization", "1", {packages:["treemap"]});
@@ -586,12 +735,12 @@ function display_pageview_chart($courseid, $pageview)
                             // Create and populate the data table.
                             var data = google.visualization.arrayToDataTable([
    <?php
-   echo $finalURL;
+   echo $StudentfinalURL;
    ?>
    ]);
 
                             // Create and draw the visualization.
-                            var tree = new google.visualization.TreeMap(document.getElementById('chart_div'));
+                            var tree = new google.visualization.TreeMap(document.getElementById('students_chart_div'));
                             tree.draw(data, {
                             minColor: '#990000',
                             midColor: '#ddd',
@@ -602,7 +751,34 @@ function display_pageview_chart($courseid, $pageview)
                         }
                     </script>
    <center>
-   <div id="chart_div" style="width: 910px; height: 480px;"></div></center> ><br />
+   <div id="students_chart_div" style="width: 910px; height: 480px;"></div></center><br />
+
+   <h1>Staff and Other Users TreeMap Chart:</h1>
+   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+                    <script type="text/javascript">
+                        google.load("visualization", "1", {packages:["treemap"]});
+                        google.setOnLoadCallback(drawChart);
+                        function drawChart() {
+                            // Create and populate the data table.
+                            var data = google.visualization.arrayToDataTable([
+   <?php
+   echo $StafffinalURL;
+   ?>
+   ]);
+
+                            // Create and draw the visualization.
+                            var Stree = new google.visualization.TreeMap(document.getElementById('staff_chart_div'));
+                            Stree.draw(data, {
+                            minColor: '#990000',
+                            midColor: '#ddd',
+                            maxColor: '#009900',
+                            headerHeight: 15,
+                            fontColor: 'black',
+                            showScale: true});
+                        }
+                    </script>
+   <center>
+   <div id="staff_chart_div" style="width: 910px; height: 480px;"></div></center><br />
    <?php
 
 }
@@ -651,13 +827,57 @@ function getNumberOfUniqueStaff($courseid)
    return $c;
 }
 
-function display_locationbased_chart($courseid, $data)
+function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 0)
 {
    $DataStructure = getLog($courseid);//, 2);
    $NLLocations = $DataStructure["Location"];
+   $arrDate = $DataStructure["Date/Time"];
    $Locations = array_replace($NLLocations, array_fill_keys(array_keys($NLLocations, null), 'Unknown'));
-   $arrResults = array_count_values($Locations);
 
+   date_default_timezone_set('GMT');
+
+   if($MinDate == 0 || $MaxDate == 0)
+   {
+      $MinDate = reset($arrDate);
+      $MaxDate = end($arrDate);
+      $UnixMinDate = strtotime($MinDate);
+      $UnixMaxDate = strtotime($MaxDate);
+   }
+   else
+   {
+      $GMMinDate = str_replace("/", "-", $MinDate);
+      $GMMaxDate = str_replace("/", "-", $MaxDate);
+      $UnixMinDate = strtotime($GMMinDate);
+      $UnixMaxDate = strtotime($GMMaxDate);
+   }
+
+   //Code for the PI Chart
+   $ArrLoc = $DataStructure["Location"];
+   $ArrUsers = $DataStructure["User_Type"];
+   $cnt = count($ArrUsers);
+   for($p = 0; $p <= $cnt; $p++)
+   {
+      $var1 = $ArrLoc[$p];
+      $var2 = $ArrUsers[$p];
+      $Fdate = $arrDate[$p];
+      $timestamp = strtotime($Fdate);
+      if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
+      {
+         /*if(($var2 == "Student")) //Not agreed yet with Dr. Jonathan.
+         {
+         $arrStudentsResults[$p] = $var1;
+         }
+         else //Staff or other
+         {
+         $arrStaffResults[$p] = $var1;
+         }*/
+         $arrLocations[$p] = $var1;
+      }
+   }
+   //$arrResultsStudents = array_count_values($arrStudentsResults);//Not agreed yet with Dr. Jonathan.
+   //$arrResultsStaff = array_count_values($arrStaffResults);
+
+   $arrResults = array_count_values($arrLocations);
    foreach($arrResults as $index=>$value)
    {
       $dataview = $dataview . "['$index',$value]" . ",\n";
@@ -685,13 +905,8 @@ function display_locationbased_chart($courseid, $data)
     </script>
     <div id="visualization" style="width:750px;height:500px;margin:auto;padding-top:50px;"></div><br />
    <?php
-   $arrResults = array_count_values($DataStructure["Location"]);
-   foreach($arrResults as $index=>$value)
-   {
-      $AnswerStr = $AnswerStr . "['$index',$value]" . ",\n";
-   }
-   $AnswerStr = substr($AnswerStr, 0, -2);
-   //the map locations...
+
+   //Code for GeoMap Chart
    echo "      <script type='text/javascript' src='https://www.google.com/jsapi'></script>
                     <script type='text/javascript'>
                     google.load('visualization', '1', {'packages': ['geochart']});
@@ -700,7 +915,7 @@ function display_locationbased_chart($courseid, $data)
                     function drawMarkersMap() {
                     var data = google.visualization.arrayToDataTable([
                         ['City',   'Number of Access'],";
-   echo $AnswerStr;
+   echo $dataview;
    echo "      ]);
 
                       var options = {
@@ -717,7 +932,7 @@ function display_locationbased_chart($courseid, $data)
    echo '    <center><div id="chart_div" style="width: 750px; height: 500px;"></div></center>';
 }
 
-function display_forum_view($courseid)
+function display_forum_view($courseid, $MinDate = 0, $MaxDate = 0)
 {
    global $CFG, $DB;
    $DataStruct = getLog($courseid, 5);
@@ -725,14 +940,31 @@ function display_forum_view($courseid)
    $arrDate = $DataStruct["Date/Time"];//the date needs to be reformated to be yyyy-mm-dd
    $SearchedActivity = "forum";// this must changed via GUI later.
    $SearchedActions = array("add discussion", "add post", "update post", "view discussion", "view forum", "view forums", "search");// this must changed via GUI later.
+   date_default_timezone_set('GMT');
 
-   error_reporting(E_ALL ^ E_NOTICE);
+   if($MinDate == 0 || $MaxDate == 0)
+   {
+      $MinDate = reset($arrDate);
+      $MaxDate = end($arrDate);
+      $UnixMinDate = strtotime($MinDate);
+      $UnixMaxDate = strtotime($MaxDate);
+   }
+   else
+   {
+      $GMMinDate = str_replace("/", "-", $MinDate);
+      $GMMaxDate = str_replace("/", "-", $MaxDate);
+      $UnixMinDate = strtotime($GMMinDate);
+      $UnixMaxDate = strtotime($GMMaxDate);
+   }
+
+   //error_reporting(E_ALL ^ E_NOTICE);
 
    $finalURL = "\n['Date' ,'Add Discussion','Add Post','Update Post','View Discussion','View Forum','View Forums','Search'],\n";
    $rN = 0;
    $cntArrMax = count($arrAction);
    $RM = 0;
-   for($i = $cntArrMax; $i >= 0; $i--)
+   //for($i = $cntArrMax; $i >= 0; $i--)
+   for($i = 0; $i <= $cntArrMax; $i++)
    {
       $VUser = $DataStruct["User_Type"][$i];
       $TestUser = $DataStruct["Users"][$i];
@@ -743,20 +975,23 @@ function display_forum_view($courseid)
          {
             $Fdate = $arrDate[$i];
             $timestamp = strtotime($Fdate);
-            $Ndate = date("Y/m/d", $timestamp);
-            if($Ndate != $RM)
+            $Ndate = gmdate("Y/m/d", $timestamp);
+            if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
             {
-               $Count0 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[0], $Ndate);
-               $Count1 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[1], $Ndate);
-               $Count2 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[2], $Ndate);
-               $Count3 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[3], $Ndate);
-               $Count4 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[4], $Ndate);
-               $Count5 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[5], $Ndate);
-               $Count6 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[6], $Ndate);
+               if($Ndate != $RM)
+               {
+                  $Count0 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[0], $Ndate);
+                  $Count1 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[1], $Ndate);
+                  $Count2 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[2], $Ndate);
+                  $Count3 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[3], $Ndate);
+                  $Count4 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[4], $Ndate);
+                  $Count5 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[5], $Ndate);
+                  $Count6 = CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[6], $Ndate);
 
-               $finalURL = $finalURL . "['$Ndate',   $Count0, $Count1, $Count2, $Count3, $Count4, $Count5, $Count6],\n";
-               $RM = $Ndate;
-               $rN++;
+                  $finalURL = $finalURL . "['$Ndate',   $Count0, $Count1, $Count2, $Count3, $Count4, $Count5, $Count6],\n";
+                  $RM = $Ndate;
+                  $rN++;
+               }
             }
          }
       }
@@ -793,7 +1028,7 @@ function display_forum_view($courseid)
                         google.setOnLoadCallback(drawVisualization);
                     </script>";
    if($rN == 0)
-      echo "<b>No forum data is availabe.</b>";
+      echo "<b>No forum data is availabe.</b> " . $MinDate . " - " . $MaxDate;
    echo '<center><div id="visualization" style="width: 700px; height: 500px;"></div></center><br />';
    //the second chart start here...
 
@@ -809,7 +1044,8 @@ function display_forum_view($courseid)
 
    $cntArrMax = count($arrAction);
    $RM = 0;
-   for($i = $cntArrMax; $i >= 0; $i--)
+   //for($i = $cntArrMax; $i >= 0; $i--)
+   for($i = 0; $i <= $cntArrMax; $i++)
    {
       $VUser = $DataStruct["User_Type"][$i];
       $TestUser = $DataStruct["Users"][$i];
@@ -821,6 +1057,8 @@ function display_forum_view($courseid)
             $Fdate = $arrDate[$i];
             $timestamp = strtotime($Fdate);
             $Ndate = date("Y/m/d", $timestamp);
+            if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
+            {
                if($Ndate != $RM)
                {
                   $Count0 = $Count0 + CountSetAllUsers($DataStruct, $SearchedActivity, $SearchedActions[0], $Ndate);
@@ -835,6 +1073,7 @@ function display_forum_view($courseid)
                   $RM = $Ndate;
                   $rN++;
                }
+            }
          }
       }
    }
@@ -872,8 +1111,8 @@ function display_forum_view($courseid)
 
 function getLog($courseid, $Flag = 0)
 {
-   //ini_set('display_errors', 1);
-   //error_reporting( ~ 0);
+   //   ini_set('display_errors', 1);
+   //   error_reporting( ~ 0);
    ini_set('memory_limit', '-1');
    global $CFG, $DB, $COURSE, $USER, $SESSION;
    set_time_limit(300);
@@ -937,11 +1176,13 @@ function getLog($courseid, $Flag = 0)
    */
    $sql = "SELECT c.fullname AS CourseName, from_unixtime(l.time) AS DateandTime,u.username Username,
            l.ip IPAddress, u.firstname FirstName, u.lastname LastName, u.email Email, l.module Activity,
-           l.action Action, l.url URL, rc.name AS Information, l.userid AS UserID, l.info AS InformationID
+           l.action Action, l.url URL, rc.name AS Information, l.userid AS UserID, l.info AS InformationID,
+           rl.roleid UserRoleID
 
            FROM {log} l LEFT JOIN {user} u ON l.userid = u.id
            LEFT JOIN {resource} rc ON rc.id = l.info
            LEFT JOIN {course} c ON c.id = l.course
+           LEFT JOIN {role_assignments} rl ON rl.userid = l.userid
 
            WHERE c.id = " . $courseid . "
            ";
@@ -949,25 +1190,20 @@ function getLog($courseid, $Flag = 0)
    $CountSQL = "SELECT count(l.userid) FROM {log} l, {user} u, {role_assignments} r, {course} c, {resource} rc
                 WHERE r.userid = l.userid AND c.id = " . $courseid;
 
-   if($Flag == 0)
+   if($Flag == 0 || $Flag == 5)
    {
-      $sql = $sql . " GROUP BY u.username, l.time order by l.time DESC";
-      //$sql = $sql . " GROUP BY Username ORDER BY DateandTime Desc";
+      //$sql = $sql . " GROUP BY u.username, l.time order by l.time DESC";
+      $sql = $sql . " GROUP BY u.username, l.time order by DateandTime asc;";
    }
    elseif($Flag == 1)
    {
-      $sql = $sql . " GROUP BY u.username ORDER BY u.username Asc";
-      //$sql = $sql . " GROUP BY Username ORDER BY Username Asc";
+      //$sql = $sql . " GROUP BY u.username ORDER BY u.username Asc";
+      $sql = $sql . " GROUP BY u.username, l.time ORDER BY Username Asc";
    }
    elseif($Flag == 2)
    {
       $sql = $sql . " GROUP BY u.username ORDER BY u.username Desc";
       //$sql = $sql . " GROUP BY Username ORDER BY Username Desc";
-   }
-   else
-   {
-      $sql = $sql . " GROUP BY u.username, l.time order by l.time DESC";
-      //$sql = $sql . " GROUP BY Username ORDER BY DateandTime Desc";
    }
 
    $indeces = array();
@@ -1081,20 +1317,23 @@ function getLog($courseid, $Flag = 0)
          if($L == 12)
          {
             $sel_user_id = $val;
-            //$User_Role = get_user_roles_in_course($sel_user_id,$courseid);// this will set everybody as students.
-            $UType = "Staff";//
-            if( ! has_capability('mod/page:addinstance', $context, $sel_user_id))
-               $UType = "Student";
-            $UserType[$recNo] = $UType;
-            //$UserType[$recNo] = $User_Role;
-
-            // and
-            $UserID[$recNo] = $val;
+            $UserID[$recNo] = $sel_user_id;
          }
-         // and
          if($L == 13)
          {
             $InformationID[$recNo] = $val;
+         }
+         if($L == 14)
+         {
+            $sel_role_id = $val;
+            if($sel_role_id == 5)
+               //5 = Student
+               $UType = "Student";
+            elseif($sel_role_id == 3)
+               $UType = "Staff";
+            else
+               $UType = "Other User";
+            $UserType[$recNo] = $UType;
          }
          $L++;
       }
@@ -1118,18 +1357,24 @@ function getLog($courseid, $Flag = 0)
                           "Action"=>$Action,
                           "ActionURL"=>$URL,
                           "Information"=>$Information,
-                          //"RoleID"=>$RoleID,
                           "Location"=>$City,
                           "User_Type"=>$UserType,
-                          "RecordsNo"=>$all_records_count
-                          , // and:
+                          "RecordsNo"=>$all_records_count,
                           "UserID"=>$UserID,
                           "InformationID"=>$InformationID
-                          // but there seems a problem with InformationID
                           );
    if($Flag != 5)
       geoip_close($gi);
    return $DataStructure;
+}
+
+function getSingleUserAddressRec($ReqUserID)
+{
+   global $DB;
+   $UserSQL = "SELECT address FROM {user} where id = ?";
+   $params = array($ReqUserID);
+   $UserTypeRec = $DB->get_field_sql($UserSQL, $params);
+   return $UserTypeRec;
 }
 
 function IPAddressCheck($RangeIP, $CampusNameArr, $checkip)
@@ -1164,7 +1409,7 @@ function IPAddressCheck($RangeIP, $CampusNameArr, $checkip)
 
 function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
 {
-   $DClass = $DataClass; //$_SESSION['DataClass'];
+   $DClass = $DataClass;//$_SESSION['DataClass'];
    $Answer = 0;
    $DataDate = $DClass["Date/Time"];
    $DataAction = $DClass["Action"];
@@ -1188,4 +1433,4 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
-}
+}
