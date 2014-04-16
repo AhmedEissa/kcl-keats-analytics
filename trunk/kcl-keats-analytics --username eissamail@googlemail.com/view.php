@@ -40,7 +40,7 @@ $PAGE->set_course($course);
 $PAGE->set_heading($SITE->fullname);
 $PAGE->set_pagelayout('course');
 $PAGE->set_pagetype('course-view-' . $course->format);
-$pagetitle = 'KEATS Analytics' . ": " . 'Page View';
+$pagetitle = 'KEATS Analytics v0.1 - Course ID: ' . $courseid;
 $PAGE->set_title($pagetitle);
 
 /*$PAGE->navbar->add(get_string('blocks'));
@@ -50,37 +50,113 @@ $PAGE->navbar->add($strtitle);*/
 
 echo $OUTPUT->header();
 //echo $OUTPUT->heading("Pages access");
+$jquery = $CFG->wwwroot . '/blocks/keats/jquery';
+$dateFilterHTML = '
+<link rel="stylesheet" href="' . $jquery . '/themes/base/jquery.ui.all.css">
+<script src="' . $jquery . '/jquery-1.10.2.js"></script>
+<script src="' . $jquery . '/ui/jquery.ui.core.js"></script>
+<script src="' . $jquery . '/ui/jquery.ui.widget.js"></script>
+<script src="' . $jquery . '/ui/jquery.ui.datepicker.js"></script>
+<link rel="stylesheet" href="' . $jquery . '/demos/demos.css">
+<script>
+	$(function() {
+		$( "#from" ).datepicker({
+			defaultDate: "+1w",
+			changeMonth: true,
+            altFormat: "dd-mm-yy",
+			numberOfMonths: 1,
+			onClose: function( selectedDate ) {
+				$( "#to" ).datepicker( "option", "minDate", selectedDate );
+			}
+		});
+		$( "#to" ).datepicker({
+			defaultDate: "+1w",
+			changeMonth: true,
+            altFormat: "dd-mm-yy",
+			numberOfMonths: 1,
+			onClose: function( selectedDate ) {
+				$( "#from" ).datepicker( "option", "maxDate", selectedDate );
+			}
+		});
+	});
+</script>
+<Form method="post" action="' . $PAGE->url . '#tab' . $_SESSION["lasttabid"] . '">
+<label for="from">Filter date from: </label>
+<input type="text" id="from" name="from"/>
+<label for="to"> to: </label>
+<input type="text" id="to" name="to"/>
+<input type="hidden" name="view" value="' . $view . '" />
+<i> (leave it empty to select the whole date range)</i><br />
+<input type="submit" value="Reload report"></Form>';
+
+$from = $_POST['from'];
+$to = $_POST['to'];
 
 switch($view)
 {
    case 'page':
-      echo $OUTPUT->heading("Page views report");
-      $pageview = isset($_REQUEST['pageview']) &&  ! empty($_REQUEST['pageview'])? $_REQUEST['pageview']: array();
-      display_pageview_chart($courseid, $pageview);
+      $tabID = 1;
+      if($from != false)
+         $strFilter = " from: " . $from . " to " . $to;
+      else
+         $strFilter = "";
+      echo $OUTPUT->heading("Page views report" . $strFilter);
+      echo $dateFilterHTML;
+      display_pageview_chart($courseid, $from, $to);
+      $from = false;
       break;
 
    case 'location':
-      echo $OUTPUT->heading("Visits by location report");
-      display_locationbased_chart($courseid, $data);
+      $tabID = 2;
+      if($from != false)
+         $strFilter = " from: " . $from . " to " . $to;
+      else
+         $strFilter = "";
+      echo $OUTPUT->heading("Visits by location report" . $strFilter);
+      echo $dateFilterHTML;
+      display_locationbased_chart($courseid, $data, $from, $to);
+      $from = false;
       break;
 
    case 'forum':
-      echo $OUTPUT->heading("Forum Participation Report");
-      display_forum_view($courseid);
+      $tabID = 3;
+      if($from != false)
+         $strFilter = " from: " . $from . " to " . $to;
+      else
+         $strFilter = "";
+      echo $OUTPUT->heading("Forum Participation Report" . $strFilter);
+      echo $dateFilterHTML;
+      display_forum_view($courseid, $from, $to);
+      $from = false;
       break;
 
    case 'ProgressTracker':
-      echo $OUTPUT->heading("Progress Analytics Report");
-      display_progress_tracker_chart($courseid);
+      $tabID = 4;
+      if($from != false)
+         $strFilter = " from: " . $from . " to " . $to;
+      else
+         $strFilter = "";
+      echo $OUTPUT->heading("Progress Analytics Report" . $strFilter);
+      echo $dateFilterHTML;
+      display_progress_tracker_chart($courseid, $from, $to);
+      $from = false;
       break;
 
    case 'learningdesign':
-      echo $OUTPUT->heading("Learning Design Report");
-      display_learning_design_chart($courseid);
+      $tabID = 5;
+      if($from != false)
+         $strFilter = " from: " . $from . " to " . $to;
+      else
+         $strFilter = "";
+      echo $OUTPUT->heading("Learning Design Report" . $strFilter);
+      echo $dateFilterHTML;
+      display_learning_design_chart($courseid, $from, $to);
+      $from = false;
       break;
 
    default: //Simply ignore the user request...
       break;
 }
 
+$_SESSION["lasttabid"] = $tabID;
 echo $OUTPUT->footer();
