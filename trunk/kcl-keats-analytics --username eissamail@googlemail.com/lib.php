@@ -648,7 +648,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrBookViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Book view ($bookviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value BV)','Book view ($bookviewCount)',$value]" . ",\n";
       }
    }
 
@@ -658,7 +658,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrPageViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Page view ($pageviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value PV)','Page view ($pageviewCount)',$value]" . ",\n";
       }
    }
 
@@ -668,7 +668,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrURLViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','URL view ($urlviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value UV)','URL view ($urlviewCount)',$value]" . ",\n";
       }
    }
 
@@ -678,7 +678,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrResourceViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StudentfinalURL = $StudentfinalURL . "['$index ($value)','Resource view ($resourceviewCount)',$value]" . ",\n";
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value RV)','Resource view ($resourceviewCount)',$value]" . ",\n";
       }
    }
 
@@ -690,7 +690,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrStaffBookViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StafffinalURL = $StafffinalURL . "['$index ($value)','Book view ($StaffbookviewCount)',$value]" . ",\n";
+         $StafffinalURL = $StafffinalURL . "['$index ($value BV)','Book view ($StaffbookviewCount)',$value]" . ",\n";
       }
    }
 
@@ -700,7 +700,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrStaffPageViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StafffinalURL = $StafffinalURL . "['$index ($value)','Page view ($StaffpageviewCount)',$value]" . ",\n";
+         $StafffinalURL = $StafffinalURL . "['$index ($value PV)','Page view ($StaffpageviewCount)',$value]" . ",\n";
       }
    }
 
@@ -710,7 +710,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrStaffURLViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StafffinalURL = $StafffinalURL . "['$index ($value)','URL view ($StaffurlviewCount)',$value]" . ",\n";
+         $StafffinalURL = $StafffinalURL . "['$index ($value UV)','URL view ($StaffurlviewCount)',$value]" . ",\n";
       }
    }
 
@@ -720,7 +720,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       foreach($arrStaffResourceViewInfoU as $index=>$value)
       {
          $index = str_replace("'", "\'", $index);
-         $StafffinalURL = $StafffinalURL . "['$index ($value)','Resource view ($StaffresourceviewCount)',$value]" . ",\n";
+         $StafffinalURL = $StafffinalURL . "['$index ($value RV)','Resource view ($StaffresourceviewCount)',$value]" . ",\n";
       }
    }
 
