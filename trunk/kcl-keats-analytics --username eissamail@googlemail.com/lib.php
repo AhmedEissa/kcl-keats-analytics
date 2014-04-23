@@ -310,7 +310,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       {
          if($dates[$i + 1] == $dates[$i])
          {
-            if($types[$i] == "Staff")
+            if(strrpos($types[$i], "teacher")) //Staff
             {
                $staff_pageviews++;
 
@@ -320,7 +320,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                   $unique_staff++;
                }
             }
-            elseif($types[$i] == "Student")
+            elseif($types[$i] == "student")
             {
                $student_pageviews++;
 
@@ -343,7 +343,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
          }
          else
          {
-            if($types[$i] == "Staff")
+            if(strrpos($types[$i], "teacher")) //Staff
             {
                $staff_pageviews++;
 
@@ -375,7 +375,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $daily_staff = array();
                $daily_others = array();
             }
-            elseif($types[$i] == "Student")
+            elseif(($types[$i] == "student")) //student
             {
                $student_pageviews++;
 
@@ -520,7 +520,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
 
       if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
       {
-         if($SelUserType == "Student")
+         if($SelUserType == "student")
          {
             if($V1 == $V0)
             {
@@ -796,7 +796,7 @@ function getNumberOfUniqueStudents($courseid)
       $type = $UsersTypeArray[$i];
       if($UsersArray[$i + 1] == $user)
       {
-         if($type = "Student")
+         if($type == "student")
          {
             $c++;
          }
@@ -818,7 +818,7 @@ function getNumberOfUniqueStaff($courseid)
       $type = $UsersTypeArray[$i];
       if($UsersArray[$i + 1] == $user)
       {
-         if($type = "Staff")
+         if(strrpos($type, "teacher")) //"Staff"
          {
             $c++;
          }
@@ -863,7 +863,7 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
       $timestamp = strtotime($Fdate);
       if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
       {
-         /*if(($var2 == "Student")) //Not agreed yet with Dr. Jonathan.
+         /*if(($var2 == "student")) //Not agreed yet with Dr. Jonathan.
          {
          $arrStudentsResults[$p] = $var1;
          }
@@ -1111,8 +1111,8 @@ function display_forum_view($courseid, $MinDate = 0, $MaxDate = 0)
 
 function getLog($courseid, $Flag = 0)
 {
-   //   ini_set('display_errors', 1);
-   //   error_reporting( ~ 0);
+   //ini_set('display_errors', 1);
+   //error_reporting( ~ 0);
    ini_set('memory_limit', '-1');
    global $CFG, $DB, $COURSE, $USER, $SESSION;
    set_time_limit(300);
@@ -1177,12 +1177,13 @@ function getLog($courseid, $Flag = 0)
    $sql = "SELECT c.fullname AS CourseName, from_unixtime(l.time) AS DateandTime,u.username Username,
            l.ip IPAddress, u.firstname FirstName, u.lastname LastName, u.email Email, l.module Activity,
            l.action Action, l.url URL, rc.name AS Information, l.userid AS UserID, l.info AS InformationID,
-           rl.roleid UserRoleID
+           rle.shortname UserRole
 
            FROM {log} l LEFT JOIN {user} u ON l.userid = u.id
            LEFT JOIN {resource} rc ON rc.id = l.info
            LEFT JOIN {course} c ON c.id = l.course
            LEFT JOIN {role_assignments} rl ON rl.userid = l.userid
+           LEFT JOIN {role} rle ON rle.id = rl.roleid
 
            WHERE c.id = " . $courseid . "
            ";
@@ -1325,14 +1326,17 @@ function getLog($courseid, $Flag = 0)
          }
          if($L == 14)
          {
-            $sel_role_id = $val;
-            if($sel_role_id == 5)
-               //5 = Student
-               $UType = "Student";
-            elseif($sel_role_id == 3)
-               $UType = "Staff";
-            else
+            $user_role = $val;
+
+            if (is_null($user_role))
+            {
                $UType = "Other User";
+            }
+            else
+            {
+               $UType = $user_role;
+            }
+
             $UserType[$recNo] = $UType;
          }
          $L++;
@@ -1433,4 +1437,4 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
-}
+}
