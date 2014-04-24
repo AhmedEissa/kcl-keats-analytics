@@ -18,6 +18,8 @@ ini_set('display_errors', 'On');
 define ('DISPLAY_LIMIT_MAIN',15);
 define ('DISPLAY_LIMIT_BLOCK',3);
 
+$FILTERDATES = true; // used by progress analytics section to switch on/off, so that the block can report current data while the main view can filter dates
+
 /**
  * Get style.css
  * TODO: Include in ?view.php or lib.php?
@@ -64,7 +66,7 @@ function getUserId()
 }
 
 /**
- * show user details if overridden
+ * show user details if overridden (for development)
  *
  */
 function showUser() 
@@ -158,7 +160,7 @@ function get_course_format($courseid)
 {
     global $CFG, $DB;
 
-    $sql = "SELECT format FROM {course_format_options} WHERE courseid = ? LIMIT 1";
+    $sql = "SELECT format FROM {course_format_options} WHERE courseid = ? LIMIT 1;";
     $result = $DB->get_record_sql($sql, array($courseid));
     return $result->format;
 }
@@ -191,7 +193,7 @@ function get_course_modules_info($courseid)
 
     $sql = "SELECT  {course_modules}.id, {course_modules}.instance, {course_modules}.section,  {course_modules}.module,  {modules}.name as modname,
             if (completion > 0 or completiongradeitemnumber is not null or completionview > 0 or completionexpected <> 0,true,false)
-                as required
+                as required, {course_modules}.completionexpected             
             FROM {course_modules}, {modules}
             WHERE {course_modules}.module = {modules}.id
             AND course = ?
@@ -211,8 +213,7 @@ function get_course_modules_info($courseid)
         if (trim($result[$c]->name) == "") {
             $result[$c]->name = "Untitled"; 
         }
-        */
-        
+        */        
         // and href        
         $result[$c]->href = $CFG->wwwroot.'/mod/'.$result[$c]->modname.'/view.php?id='.$result[$c]->id; // ?
     }    
@@ -228,9 +229,21 @@ function get_course_modules_info($courseid)
 function get_course_module_students_completed($courseid, $moduleid)
 {
     global $CFG, $DB;
+    global $FILTERDATES, $from, $to;
 
     // return $DB->count_records('course_modules_completion', array('coursemoduleid'=>$moduleid)); // overcounts
-    $rows = $DB->get_records('course_modules_completion', array('coursemoduleid'=>$moduleid)); 
+    /*
+    $params = array('coursemoduleid'=>$moduleid);
+    $rows = $DB->get_records('course_modules_completion', $params); 
+    */
+    $sql = "SELECT userid FROM {course_modules_completion} WHERE coursemoduleid = '".$moduleid."'";
+    if ($FILTERDATES && $from && $to) {
+        $sql .= " AND timemodified >= '".$from."'";
+        $sql .= " AND timemodified <= '".$to."'";
+    }
+    $sql .= ";";
+    $rows = $DB->get_records_sql($sql);
+    
     $count = 0;
     foreach ($rows as $row) {
         if (is_student_on_course($courseid, $row->userid)) 
@@ -249,8 +262,16 @@ function get_course_module_students_completed($courseid, $moduleid)
 function get_course_module_user_has_completed($moduleid,$userid)
 {
     global $CFG, $DB;
+    global $FILTERDATES,$from, $to;    
 
-    return $DB->count_records('course_modules_completion', array('coursemoduleid'=>$moduleid,'userid'=>$userid)) > 0;
+    //return $DB->count_records('course_modules_completion', array('coursemoduleid'=>$moduleid,'userid'=>$userid)) > 0;
+    $sql = "SELECT COUNT(userid) FROM {course_modules_completion} WHERE coursemoduleid = '".$moduleid."' AND userid = '".$userid."'";    
+    if ($FILTERDATES && $from && $to) {
+        $sql .= " AND timemodified >= '".$from."'";
+        $sql .= " AND timemodified <= '".$to."'";
+    }
+    $sql .= ";";
+    return $DB->count_records_sql($sql) > 0;
 }
 
 /**
@@ -333,7 +354,7 @@ function get_course_total_number_users($courseid)
     
     $sql = "SELECT u.id, u.username
     FROM mdl_user u, mdl_role_assignments r
-    WHERE u.id=r.userid AND r.contextid = {$contextid->id}";
+    WHERE u.id=r.userid AND r.contextid = {$contextid->id};";
     
     return $DB->count_records_sql($sql, array());    
 }
@@ -353,7 +374,7 @@ function get_course_users($courseid)
     
     $sql = "SELECT u.id
     FROM mdl_user u, mdl_role_assignments r
-    WHERE u.id=r.userid AND r.contextid = {$contextid->id}";
+    WHERE u.id=r.userid AND r.contextid = {$contextid->id};";
     
     $results = $DB->get_records_sql($sql, array());
     $return = array();
@@ -490,6 +511,7 @@ function get_trackable_module_types($courseid)
 function get_course_modules_recently_accessed($courseid, $number = DISPLAY_LIMIT_MAIN, $userid = NULL)
 {
     global $CFG, $DB, $LOG, $MODE;
+    global $FILTERDATES, $from, $to;
 
     $modules = get_course_modules_info($courseid);    
     $module_types = get_trackable_module_types($courseid);
@@ -500,6 +522,11 @@ function get_course_modules_recently_accessed($courseid, $number = DISPLAY_LIMIT
     foreach($LOG['Index'] as $index)   
     {			
         if (!isset($LOG['UserID'][$index])) $LOG['UserID'][$index] = get_userid_from_username($LOG['Users'][$index]);
+        
+        // skip if outside date limits
+        if ($FILTERDATES && $from && $to) {
+            if ($LOG['Unix_Date/Time'][$index] < $from || $LOG['Unix_Date/Time'][$index] > $to) continue;
+        }
 		
 		// skip if not current student		
 		if (!is_student_on_course($courseid, $LOG['UserID'][$index])) continue; 
@@ -507,7 +534,7 @@ function get_course_modules_recently_accessed($courseid, $number = DISPLAY_LIMIT
         // limit by userid if required
         if ($userid) {
 			if ($LOG['UserID'][$index] != $userid) continue;
-        }
+        }                
     
 		// try work out module Id
 		/*
@@ -575,6 +602,7 @@ function get_course_modules_recently_accessed($courseid, $number = DISPLAY_LIMIT
 function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role = "Student"/*||"All"*/)
 {
     global $CFG, $DB, $LOG, $MODE;
+    global $FILTERDATES, $from, $to;
     
     $users = array(); $accesses = 0;
     foreach($LOG['Index'] as $index)   
@@ -586,6 +614,11 @@ function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role
         else 
 		*/
         $module = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]); 
+        
+        // skip if outside date filters
+        if ($FILTERDATES && $from && $to) {
+            if ($LOG['Unix_Date/Time'][$index] < $from || $LOG['Unix_Date/Time'][$index] > $to) continue;
+        }                
     
         // skip if not module parameter
         if ($module != $moduleid) continue;
@@ -619,14 +652,23 @@ function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role
 function user_has_accessed_module($courseid, $moduleid, $userid)
 {
     global $LOG;
+    global $FILTERDATES, $from, $to;
     
     foreach($LOG['Index'] as $index)
     {
+
+        // skip if outside date filters
+        if ($FILTERDATES && $from && $to) {
+            if ($LOG['Unix_Date/Time'][$index] < $from || $LOG['Unix_Date/Time'][$index] > $to) continue;
+        }                
+                
         // work out module Id and skip if not parameter
-        if (isset($LOG['InformationID']) && is_numeric($LOG['InformationID'][$index]))
+        /*  
+        if (isset($LOG['InformationID']) && is_numeric($LOG['InformationID'][$index])) // not accurate
             $module = $LOG['InformationID'][$index]; 
         else 
-            $module = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]); 
+        */
+        $module = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]); 
         if ($module != $moduleid) continue;
         
         // work out userid
@@ -649,8 +691,16 @@ function user_has_accessed_module($courseid, $moduleid, $userid)
 function user_has_accessed_course($courseid, $userid)
 {
     global $DB;
+    global $FILTERDATES, $from, $to;    
     
-    return $DB->get_record('log', array('course'=>$courseid,'userid'=>$userid),'id');    
+    //return $DB->get_record('log', array('course'=>$courseid,'userid'=>$userid),'id');        
+    $sql = "SELECT COUNT(userid) FROM {log} WHERE course = '".$courseid."' AND userid = '".$userid."'";
+    if ($FILTERDATES && $from && $to) {
+        $sql .= " AND time >= '".$from."'";
+        $sql .= " AND time <= '".$to."'";
+    }
+    $sql .= ";";
+    return $DB->count_records_sql($sql) > 0;    
 }
 
 /**
@@ -661,15 +711,23 @@ function user_has_accessed_course($courseid, $userid)
  */
 function get_course_assignments($courseid)
 {
+    global $DB;
+    
     $modules = get_course_modules_info($courseid);
     $assignments = array();
     foreach ($modules as $module) {
         if ($module->modname == "assign") {
+            // get due date
+            $sql = "SELECT duedate FROM {assign} WHERE course = ? AND id = ? LIMIT 1;";
+            $result = $DB->get_record_sql($sql, array($courseid,$module->instance));
+            $duedate = $result->duedate;
+            // create record            
             $assignments[] = array(
                 'id' => $module->id,
                 'instance' => $module->instance,
                 'title' => $module->name,
                 'href' => $module->href,
+                'due_date' => $duedate,
             );
         }
     }
@@ -689,13 +747,19 @@ function get_course_assignments($courseid)
 function get_course_assignment_submission_data($courseid, $userid = NULL)
 {
     global $DB;
+    global $FILTERDATES, $from, $to;
     
     $num_students = get_course_number_students($courseid);
 
     $assignments =  get_course_assignments($courseid);       
     // add submissions info to assignments
     for ($c = 0; $c < count($assignments); $c++) {         
-        $sql = "SELECT userid,status FROM {assign_submission} WHERE assignment = '".$assignments[$c]['instance']."';";
+        $sql = "SELECT userid, status FROM {assign_submission} WHERE assignment = '".$assignments[$c]['instance']."'";
+        if ($FILTERDATES && $from && $to) {
+            $sql .= " AND timemodified >= '".$from."'";
+            $sql .= " AND timemodified <= '".$to."'";
+        }
+        $sql .= ";";        
         $results = $DB->get_records_sql($sql);
         $submissions = 0; $drafts = 0; $user_status = NULL;
         foreach ($results as $result) {
@@ -712,7 +776,7 @@ function get_course_assignment_submission_data($courseid, $userid = NULL)
        $assignments[$c]['drafts'] = $drafts;
        $assignments[$c]['percentage_drafted'] = round($assignments[$c]['drafts']/$num_students*100);
        
-        if ($userid != NULL) { if ($user_status == NULL) $user_status = "Not done"; $assignments[$c]['your_status'] = $user_status; }
+        if ($userid != NULL) { if ($user_status == NULL) $user_status = "Not done"; $assignments[$c]['done'] = $user_status; }
     }
     return $assignments;
 }
@@ -726,6 +790,9 @@ function get_course_assignment_submission_data($courseid, $userid = NULL)
 function display_progress_tracker_include($courseid)
 {
    global $CFG, $DB, $LOG, $USER, $MODE;
+   global $FILTERDATES, $from, $to;
+   
+   $FILTERDATES  = false; // switch off so that block shows current data (switched back on at end of block)
    
    //$indicator_done = '<span class = "done">&#10003;</span>';
    $indicator_done = '<span class = "done">&#9679;</span>';
@@ -921,13 +988,13 @@ function display_progress_tracker_include($courseid)
           $indicatorclass = "";
       }
       else {
-          if ($assignment['your_status'] == "submitted") {
+          if ($assignment['done'] == "submitted") {
               $indicator = $indicator_done;
               $title = "You are 1 of ".$assignment['percentage_submitted'] . "% of students who have submitted this assignment";
               $indicatorclass = "done";
 			  $student_completions++;
           }
-          else if ($assignment['your_status'] == "draft") {
+          else if ($assignment['done'] == "draft") {
               $indicator = $indicator_halfdone;			  
               $title = $assignment['percentage_submitted'] . '%'." of students have submitted this assignment, and you have drafted this assignment";
               $indicatorclass = "halfdone";
@@ -976,13 +1043,17 @@ function display_progress_tracker_include($courseid)
    if (!defined(JQUERY_DATATABLES_INCLUDED) || (defined(JQUERY_DATATABLES_INCLUDED) && JQUERY_DATATABLES_INCLUDED)) {
        $data .= '<script src="//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.js"></script>';
        $data .= '<style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>';
+       
+       $data .= '<style type="text/css">@import url("//ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css");</style>';       
    }
    $data .= '<style type="text/css">
                 .dataTables_length { float: right; opacity: 0.75; margin-top: -1em; }
                 .dataTables_info { opacity: 0.75; margin-top: 0.25em; }
              </style>';   
-   $data .= "<script>
-   window.onload = function() {
+   $data .= "<script>   
+    
+    window.addEventListener('load', function() { // XXX: addEventListener !IE8
+       if (window.existingload) window.existingload();       
        $(document).ready(function() { 
            $('.datatable').dataTable( {
                 'iDisplayLength': ".DISPLAY_LIMIT_MAIN.", 
@@ -991,11 +1062,15 @@ function display_progress_tracker_include($courseid)
                 'bFilter': false, 
                 'aaSorting': [], // switches off any default sorting
            });
+           
+           $('#from').datepicker({ changeMonth: true, changeYear: true, dateFormat: 'yy-mm-dd',altFormat: 'yy-mm-dd',minDate: '0', showOn: 'both' });
+           
        })
-   }
+   }, false);
    </script>
    ";      
 
+   $FILTERDATES  = true; // switch back on
    return $data;
 }
 
@@ -1083,6 +1158,8 @@ function display_required_modules_completion_student_graph($data)
 
 function display_recently_accessed_modules_student_graph($data)
 {
+   global $FILTERDATES, $from, $to;
+   
    //echo '<h4>'.'Recently accessed modules student graph'.'</h4>';
    echo '<noscript>Requires JavaScript.</noscript>';    
    
@@ -1104,7 +1181,7 @@ function display_recently_accessed_modules_student_graph($data)
         ]);
 
         var options = {
-          title: "Recently accesssed activities",
+          title: '.(($FILTERDATES && $from && $to)? '"First accessed activities"':'"Recently accesssed activities"').',
           hAxis: {title: "Activity"},
           series: {0: {type: "line", color: "green"}, 1: {type: "line", color: "blue"}},
           vAxis: {ticks: [0,25,50,75,100], title: "%"} 
@@ -1279,7 +1356,19 @@ function display_assignment_submissions_student_graph($data)
 function display_progress_tracker_chart_include($courseid)
 {
    global $CFG, $DB, $USER, $MODE, $OUTPUT;
+   global $FILTERDATES, $from, $to;
    
+   echo '<br/>';
+   
+   if ($FILTERDATES && $from && $to) {
+       echo '<p><big><strong> Filtered by dates: from '.$from ." to ".$to.'</strong></big></p>';
+       echo '&nbsp;<small>Note: These analytics use the number of <em>currently enrolled students</em>. If enrollments have changed since the requested date span then analytics using this may be incorrect.</small></p>';
+       
+       $to = strtotime(str_replace('/','-',$to));  
+       $from = strtotime(str_replace('/','-',$from));
+       // thanks http://stackoverflow.com/questions/2444820/how-to-make-strtotime-parse-dates-in-australian-i-e-uk-format-dd-mm-yyyy
+   }
+      
    if (!isset($LOG)) init_Log($courseid);
    if (!isset($MODE)) init_Mode($courseid);
    
@@ -1293,7 +1382,9 @@ function display_progress_tracker_chart_include($courseid)
    
    $data = array(); // for chart
 
-   echo '<h3>' . 'Recently accessed activities' . '</h3>' . "\n";
+   echo '<h3>';
+   if ($FILTERDATES && $from && $to) echo 'First accessed activities'; else echo 'Recently accessed activities';
+   echo '</h3>' . "\n";
    
    // show what modules are tracked
    $tracked_modules = get_trackable_module_types($courseid);
@@ -1337,7 +1428,7 @@ function display_progress_tracker_chart_include($courseid)
       echo '<td class="accesses">' . $recent_details['accesses'] . '</td>';
       $percentage = round($recent_details['accesses']/$num_students*100);
        $data[$c]['percentage'] = $percentage;
-      echo '<td class="percentage" title = "Most recent access: '. $recent_details['datetime'].'">' . $percentage . '</td>';
+      echo '<td class="percentage" title = "Accessed: '. $recent_details['datetime'].'">' . $percentage . '</td>';
       $accessed = user_has_accessed_module($courseid, $moduleid, getUserId());
       $data[$c]['accessed'] = $accessed;
       if ($MODE == "Student") echo '<td class="accessed">' . ($accessed?"Yes":"No") . '</td>'; 
@@ -1394,7 +1485,9 @@ function display_progress_tracker_chart_include($courseid)
          echo $module->name;
          echo '</a>';
          echo '</td>';
-         echo '<td>' . 'tbc' . '</td>';
+         echo '<td>';
+         echo ($module->completionexpected != 0)?date("D, j F Y H:i",$module->completionexpected):"";
+         echo  '</td>';
          echo '<td>';
          echo $num_students_completed;
          echo '</td>';
@@ -1469,7 +1562,7 @@ function display_progress_tracker_chart_include($courseid)
    
    $data = array(); // data for chart
    // make table, also computing chart data
-   $include_fields = array('title','submissions'/*,'drafts','percentage_drafted'*/,'percentage_submitted','your_status');   
+   $include_fields = array('title','due_date','submissions'/*,'drafts','percentage_drafted'*/,'percentage_submitted','done');   
    echo '<table id = "table_assignments" class = "datatable format_table">';
    echo '<thead>';   
    echo '<tr>';
@@ -1488,8 +1581,8 @@ function display_progress_tracker_chart_include($courseid)
        $data[$c]['assignment'] = $assignments[$c]['title'];
        $data[$c]['percentage'] = $assignments[$c]['percentage_submitted'];       
        if ($MODE == "Student") {
-        if ($assignments[$c]['your_status']=="submitted") $data[$c]['student_percent'] = 100;
-        else if ($assignments[$c]['your_status']=="draft") $data[$c]['student_percent'] = 50;
+        if ($assignments[$c]['done']=="submitted") $data[$c]['student_percent'] = 100;
+        else if ($assignments[$c]['done']=="draft") $data[$c]['student_percent'] = 50;
         else $data[$c]['student_percent'] = 0;
        }
        
@@ -1501,7 +1594,10 @@ function display_progress_tracker_chart_include($courseid)
            if ($field == "title") {
                echo '<a href="'.$assignments[$c]['href'].'" title = "'.$assignments[$c]['title'].'">';         
                echo '<img src = "'.$OUTPUT->pix_url('icon', 'assign').'" alt = "" title = "Assignment"/>'.'&nbsp;';
-           }           
+           }
+           else if ($field == "due_date") {
+               $val = date("D, j F Y H:i",$val);
+           }
            echo ucfirst($val);
            if ($field == "title") {
                echo '</a>';
