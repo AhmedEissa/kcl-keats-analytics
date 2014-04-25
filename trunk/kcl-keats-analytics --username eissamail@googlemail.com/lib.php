@@ -1128,7 +1128,7 @@ function getLog($courseid, $Flag = 0)
    {
       require_once($CFG->dirroot . "/blocks/keats/geolib/geoipcity.inc");
       require_once($CFG->dirroot . "/blocks/keats/geolib/geoipregionvars.php");
-      require_once($CFG->dirroot . "/blocks/keats/Excel/reader.php");
+      require_once($CFG->dirroot . "/blocks/keats/excel/reader.php");
       $KCLIPMap = $CFG->dirroot . "/blocks/keats/KCLNET.xls";//KCL IP Addres XLS file path
       $KCLIPData = new Spreadsheet_Excel_Reader();//read the attached KCL IP Addresses file
       $KCLIPData->setOutputEncoding('CP1251//IGNORE');
