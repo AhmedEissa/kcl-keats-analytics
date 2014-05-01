@@ -275,6 +275,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
 
    date_default_timezone_set('GMT');
 
+
    if($MinDate == 0 || $MaxDate == 0)
    {
       $MinDate = reset($arrDate);
@@ -1641,10 +1642,4 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
-}
-
-function is_date($date, $format = 'd/m/Y')
-{
-    $d = DateTime::createFromFormat($format, $date);
-    return $d && $d->format($format) == $date;
 }

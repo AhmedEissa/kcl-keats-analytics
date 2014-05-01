@@ -91,65 +91,96 @@ $dateFilterHTML = '
 
 $from = $_POST['from'];
 $to = $_POST['to'];
+$datecheck = (is_date($from) && is_date($to));
 
 switch($view)
 {
    case 'page':
       $tabID = 1;
-      if($from != false)
+      if($from != false && $datecheck)
          $strFilter = " from: " . $from . " to " . $to;
       else
          $strFilter = "";
       echo $OUTPUT->heading("Page views report" . $strFilter);
       echo $dateFilterHTML;
+      if(( ! is_null($from) ||  ! is_null($to)) &&  ! $datecheck)
+      {
+         echo "Empty or wrong entered dates in the date filter.";
+         $from = "";
+         $to = "";
+      }
       display_pageview_chart($courseid, $from, $to);
       $from = false;
       break;
 
    case 'location':
       $tabID = 2;
-      if($from != false)
+      if($from != false && $datecheck)
          $strFilter = " from: " . $from . " to " . $to;
       else
          $strFilter = "";
       echo $OUTPUT->heading("Visits by location report" . $strFilter);
       echo $dateFilterHTML;
+      if(( ! is_null($from) ||  ! is_null($to)) &&  ! $datecheck)
+      {
+         echo "Empty or wrong entered dates in the date filter.";
+         $from = "";
+         $to = "";
+      }
       display_locationbased_chart($courseid, $data, $from, $to);
       $from = false;
       break;
 
    case 'forum':
       $tabID = 3;
-      if($from != false)
+      if($from != false && $datecheck)
          $strFilter = " from: " . $from . " to " . $to;
       else
          $strFilter = "";
       echo $OUTPUT->heading("Forum Participation Report" . $strFilter);
       echo $dateFilterHTML;
+      if(( ! is_null($from) ||  ! is_null($to)) &&  ! $datecheck)
+      {
+         echo "Empty or wrong entered dates in the date filter.";
+         $from = "";
+         $to = "";
+      }
       display_forum_view($courseid, $from, $to);
       $from = false;
       break;
 
    case 'ProgressTracker':
       $tabID = 4;
-      if($from != false)
+      if($from != false && $datecheck)
          $strFilter = " from: " . $from . " to " . $to;
       else
          $strFilter = "";
       echo $OUTPUT->heading("Progress Analytics Report" . $strFilter);
       echo $dateFilterHTML;
+      if(( ! is_null($from) ||  ! is_null($to)) &&  ! $datecheck)
+      {
+         echo "Empty or wrong entered dates in the date filter.";
+         $from = "";
+         $to = "";
+      }
       display_progress_tracker_chart($courseid, $from, $to);
       $from = false;
       break;
 
    case 'learningdesign':
       $tabID = 5;
-      if($from != false)
+      if($from != false && $datecheck)
          $strFilter = " from: " . $from . " to " . $to;
       else
          $strFilter = "";
       echo $OUTPUT->heading("Learning Design Report" . $strFilter);
       echo $dateFilterHTML;
+      if(( ! is_null($from) ||  ! is_null($to)) &&  ! $datecheck)
+      {
+         echo "Empty or wrong entered dates in the date filter.";
+         $from = "";
+         $to = "";
+      }
       display_learning_design_chart($courseid, $from, $to);
       $from = false;
       break;
@@ -159,4 +190,10 @@ switch($view)
 }
 
 $_SESSION["lasttabid"] = $tabID;
-echo $OUTPUT->footer();
+echo $OUTPUT->footer();
+
+function is_date($date, $format = 'd/m/Y')
+{
+   $d = DateTime::createFromFormat($format, $date);
+   return $d && $d->format($format) == $date;
+}
