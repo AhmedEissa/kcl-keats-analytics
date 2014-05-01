@@ -375,7 +375,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $daily_staff = array();
                $daily_others = array();
             }
-            elseif(($types[$i] == "student")) //student
+            elseif(($types[$i] == "student"))//student
             {
                $student_pageviews++;
 
@@ -494,26 +494,40 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
    $StudentfinalURL = $finalURL;
    $StafffinalURL = $finalURL;
 
-   $SearchedActions = array("book view", "page view", "url view", "resource view");
+   $SearchedActions = array("book view", "page view", "url view", "resource view", "course view", "forum view discussion", "forum view forum", "forum view forums");
    $RecCount = count($DataStruct["Action"]);
+
    $bookviewCount = 0;
    $pageviewCount = 0;
    $urlviewCount = 0;
    $resourceviewCount = 0;
+   $courseviewCount = 0;
+   $forumviewdiscussionCount = 0;
+   $forumviewforumCount = 0;
+   $forumviewforumsCount = 0;
+
    $StaffbookviewCount = 0;
    $StaffpageviewCount = 0;
    $StaffurlviewCount = 0;
    $StaffresourceviewCount = 0;
+   $StaffcourseviewCount = 0;
+   $StaffforumviewdiscussionCount = 0;
+   $StaffforumviewforumCount = 0;
+   $StaffforumviewforumsCount = 0;
 
    for($C = 0; $C <= $RecCount; $C++)
    {
       $SelUserType = $DataStruct["User_Type"][$C];
 
       $V0 = str_replace(">", " ", $DataStruct["Action"][$C]);
-      $V1 = $SearchedActions[0];//"book view";
-      $V2 = $SearchedActions[1];//"page view";
-      $V3 = $SearchedActions[2];//"url view";
-      $V4 = $SearchedActions[3];//"resource view";
+      $V1 = $SearchedActions[0];//book view
+      $V2 = $SearchedActions[1];//page view
+      $V3 = $SearchedActions[2];//url view
+      $V4 = $SearchedActions[3];//resource view
+      $V5 = $SearchedActions[4];//course view
+      $V6 = $SearchedActions[5];//forum view discussion
+      $V7 = $SearchedActions[6];//forum view forum
+      $V8 = $SearchedActions[7];//forum view forums
 
       $Fdate = $arrDate[$C];
       $timestamp = strtotime($Fdate);
@@ -522,7 +536,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       {
          if($SelUserType == "student")
          {
-            if($V1 == $V0)
+            if($V1 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -535,7 +549,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $bookviewCount++;
             }
 
-            if($V2 == $V0)
+            if($V2 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -548,7 +562,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $pageviewCount++;
             }
 
-            if($V3 == $V0)
+            if($V3 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -561,7 +575,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $urlviewCount++;
             }
 
-            if($V4 == $V0)
+            if($V4 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -573,10 +587,62 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                }
                $resourceviewCount++;
             }
+
+            if($V5 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrCourseViewInfo[$courseviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrCourseViewInfo[$courseviewCount] = "N/A";
+               }
+               $courseviewCount++;
+            }
+
+            if($V6 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrForumViewDInfo[$forumviewdiscussionCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrForumViewDInfo[$forumviewdiscussionCount] = "N/A";
+               }
+               $forumviewdiscussionCount++;
+            }
+
+            if($V7 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrForumViewFInfo[$forumviewforumCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrForumViewFInfo[$forumviewforumCount] = "N/A";
+               }
+               $forumviewforumCount++;
+            }
+
+            if($V8 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrForumViewFsInfo[$forumviewforumsCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrForumViewFsInfo[$forumviewforumsCount] = "N/A";
+               }
+               $forumviewforumsCount++;
+            }
          }
          else //Staff and Others
          {
-            if($V1 == $V0)
+            if($V1 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -589,7 +655,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $StaffbookviewCount++;
             }
 
-            if($V2 == $V0)
+            if($V2 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -602,7 +668,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $StaffpageviewCount++;
             }
 
-            if($V3 == $V0)
+            if($V3 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -615,7 +681,7 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                $StaffurlviewCount++;
             }
 
-            if($V4 == $V0)
+            if($V4 === $V0)
             {
                if($DataStruct["Information"][$C] != "")
                {
@@ -627,6 +693,58 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
                }
                $StaffresourceviewCount++;
             }
+
+            if($V5 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffCourseViewInfo[$StaffcourseviewCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffCourseViewInfo[$StaffcourseviewCount] = "N/A";
+               }
+               $StaffcourseviewCount++;
+            }
+
+            if($V6 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffForumViewDInfo[$StaffforumviewdiscussionCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffForumViewDInfo[$StaffforumviewdiscussionCount] = "N/A";
+               }
+               $StaffforumviewdiscussionCount++;
+            }
+
+            if($V7 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffForumViewFInfo[$StaffforumviewforumCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffForumViewFInfo[$StaffforumviewforumCount] = "N/A";
+               }
+               $StaffforumviewforumCount++;
+            }
+
+            if($V8 === $V0)
+            {
+               if($DataStruct["Information"][$C] != "")
+               {
+                  $arrStaffForumViewFsInfo[$StaffforumviewforumsCount] = $DataStruct["Information"][$C];
+               }
+               else
+               {
+                  $arrStaffForumViewFsInfo[$StaffforumviewforumsCount] = "N/A";
+               }
+               $StaffforumviewforumsCount++;
+            }
          }
       }
    }
@@ -635,11 +753,19 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
    $StudentfinalURL = $StudentfinalURL . "['Page view ($pageviewCount)','Learning Resource',$pageviewCount]" . ",\n";
    $StudentfinalURL = $StudentfinalURL . "['URL view ($urlviewCount)','Learning Resource',$urlviewCount]" . ",\n";
    $StudentfinalURL = $StudentfinalURL . "['Resource view ($resourceviewCount)','Learning Resource',$resourceviewCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Course view ($courseviewCount)','Learning Resource',$courseviewCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Forum view Discussion ($forumviewdiscussionCount)','Learning Resource',$forumviewdiscussionCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Forum view Forum ($forumviewforumCount)','Learning Resource',$forumviewforumCount]" . ",\n";
+   $StudentfinalURL = $StudentfinalURL . "['Forum view Forums ($forumviewforumsCount)','Learning Resource',$forumviewforumsCount]" . ",\n";
 
    $StafffinalURL = $StafffinalURL . "['Book view ($StaffbookviewCount)','Learning Resource',$StaffbookviewCount]" . ",\n";
    $StafffinalURL = $StafffinalURL . "['Page view ($StaffpageviewCount)','Learning Resource',$StaffpageviewCount]" . ",\n";
    $StafffinalURL = $StafffinalURL . "['URL view ($StaffurlviewCount)','Learning Resource',$StaffurlviewCount]" . ",\n";
    $StafffinalURL = $StafffinalURL . "['Resource view ($StaffresourceviewCount)','Learning Resource',$StaffresourceviewCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Course view ($StaffcourseviewCount)','Learning Resource',$StaffcourseviewCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Forum view Discussion ($StaffforumviewdiscussionCount)','Learning Resource',$StaffforumviewdiscussionCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Forum view Forum ($StaffforumviewforumCount)','Learning Resource',$StaffforumviewforumCount]" . ",\n";
+   $StafffinalURL = $StafffinalURL . "['Forum view Forums ($StaffforumviewforumsCount)','Learning Resource',$StaffforumviewforumsCount]" . ",\n";
 
    //Student TreeMap Array builders
    if($arrBookViewInfo != null)
@@ -679,6 +805,46 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       {
          $index = str_replace("'", "\'", $index);
          $StudentfinalURL = $StudentfinalURL . "['$index ($value RV)','Resource view ($resourceviewCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrCourseViewInfo != null)
+   {
+      $arrCourseViewInfoU = array_count_values($arrCourseViewInfo);
+      foreach($arrCourseViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value CV)','Course view ($courseviewCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrForumViewDInfo != null)
+   {
+      $arrForumViewDInfoU = array_count_values($arrForumViewDInfo);
+      foreach($arrForumViewDInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value FVD)','Forum view Discussion ($forumviewdiscussionCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrForumViewFInfo != null)
+   {
+      $arrForumViewFInfoU = array_count_values($arrForumViewFInfo);
+      foreach($arrForumViewFInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value FVF)','Forum view Forum ($forumviewforumCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrForumViewFsInfo != null)
+   {
+      $arrForumViewFsInfoU = array_count_values($arrForumViewFsInfo);
+      foreach($arrForumViewFsInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StudentfinalURL = $StudentfinalURL . "['$index ($value FVFs)','Forum view Forums ($forumviewforumsCount)',$value]" . ",\n";
       }
    }
 
@@ -724,7 +890,45 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
       }
    }
 
+   if($arrStaffCourseViewInfo != null)
+   {
+      $arrStaffCourseViewInfoU = array_count_values($arrStaffCourseViewInfo);
+      foreach($arrStaffCourseViewInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value CV)','Course view ($StaffcourseviewCount)',$value]" . ",\n";
+      }
+   }
 
+   if($arrStaffForumViewDInfo != null)
+   {
+      $arrStaffForumViewDInfoU = array_count_values($arrStaffForumViewDInfo);
+      foreach($arrStaffForumViewDInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value FVD)','Forum view Discussion ($StaffforumviewdiscussionCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrStaffForumViewFInfo != null)
+   {
+      $arrStaffForumViewFInfoU = array_count_values($arrStaffForumViewFInfo);
+      foreach($arrStaffForumViewFInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value FVF)','Forum view Forum ($StaffforumviewforumCount)',$value]" . ",\n";
+      }
+   }
+
+   if($arrStaffForumViewFsInfo != null)
+   {
+      $arrStaffForumViewFsInfoU = array_count_values($arrStaffForumViewFsInfo);
+      foreach($arrStaffForumViewFsInfoU as $index=>$value)
+      {
+         $index = str_replace("'", "\'", $index);
+         $StafffinalURL = $StafffinalURL . "['$index ($value FVFs)','Forum view Forums ($StaffforumviewforumsCount)',$value]" . ",\n";
+      }
+   }
    ?>
    <h1>Students TreeMap Chart:</h1>
    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
@@ -1328,7 +1532,7 @@ function getLog($courseid, $Flag = 0)
          {
             $user_role = $val;
 
-            if (is_null($user_role))
+            if(is_null($user_role))
             {
                $UType = "Other User";
             }
@@ -1437,4 +1641,10 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
+}
+
+function is_date($date, $format = 'd/m/Y')
+{
+    $d = DateTime::createFromFormat($format, $date);
+    return $d && $d->format($format) == $date;
 }
