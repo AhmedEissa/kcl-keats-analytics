@@ -55,8 +55,8 @@ function display_tabs($courseid, $htmlcode)
                                         if(location.href.indexOf("#' . $tab1 . '") > -1) { a = 0 };
                                         if(location.href.indexOf("#' . $tab2 . '") > -1) { a = 1 };
                                         if(location.href.indexOf("#' . $tab3 . '") > -1) { a = 2 };
-	                                    if(location.href.indexOf("#' . $tab4 . '") > -1) { a = 3 };
-	                                    if(location.href.indexOf("#' . $tab5 . '") > -1) { a = 4 };';
+                                        if(location.href.indexOf("#' . $tab4 . '") > -1) { a = 3 };
+                                        if(location.href.indexOf("#' . $tab5 . '") > -1) { a = 4 };';
 
    $htmlScript = $htmlScript . "$('#accordion').accordion({ collapsible : true,";
    $htmlScript = $htmlScript . '                            heightStyle: "content",';
@@ -66,30 +66,30 @@ function display_tabs($courseid, $htmlcode)
                     <style>
                           body {";
    $htmlScript = $htmlScript . 'font-family: "Trebuchet MS", "Helvetica", "Arial",  "Verdana", "sans-serif";
-	                               font-size: 62.5%;
+                                   font-size: 62.5%;
                                    }
                                    .ui-accordion .ui-accordion-content {
-	                               padding:10px;
-	                               font-size:75%;
+                                   padding:10px;
+                                   font-size:75%;
                                    }
                     </style>';
 
    $tabs = $htmlScript . '<div id="accordion">
-			<h3>' . $tab1 . '</h3>
-			<div>' . $pageviewdata . '</div>
+            <h3>' . $tab1 . '</h3>
+            <div>' . $pageviewdata . '</div>
 
-			<h3>' . $tab2 . '</h3>
-			<div>' . $locationsdata . '</div>
+            <h3>' . $tab2 . '</h3>
+            <div>' . $locationsdata . '</div>
 
-			<h3>' . $tab3 . '</h3>
-			<div>' . $formanalyticsdata . '</div>
+            <h3>' . $tab3 . '</h3>
+            <div>' . $formanalyticsdata . '</div>
 
-			<h3>' . $tab4 . '</h3>
-			<div><p>' . $ProgressTracker . '</p></div>
+            <h3>' . $tab4 . '</h3>
+            <div><p>' . $ProgressTracker . '</p></div>
 
-			<h3>' . $tab5 . '</h3>
-			<div><p>' . $LearningDesign . '</p></div>
-			</div>';
+            <h3>' . $tab5 . '</h3>
+            <div><p>' . $LearningDesign . '</p></div>
+            </div>';
 
    return $tabs;
 }
@@ -453,41 +453,41 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
    show_course_views_summary($courseid, $Ldate);
    // MotionChart is here...
    ?>
-	<h1>Motion Chart:</h1>
+    <h1>Motion Chart:</h1>
     <script type="text/javascript" src="//www.google.com/jsapi"></script>
-	<script type="text/javascript">
-	google.load('visualization', '1', {packages: ['motionchart']});
+    <script type="text/javascript">
+    google.load('visualization', '1', {packages: ['motionchart']});
 
-	function drawVisualization() {
-		var data = new google.visualization.DataTable();
-		data.addColumn('string', 'Users');
+    function drawVisualization() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Users');
         data.addColumn('date', 'Date');
         data.addColumn('number', 'Unique users');
         data.addColumn('number', 'Pageviews');
-		data.addRows([
+        data.addRows([
    <?php
    //put the final text here...
    echo $finalURL;
    ?>
-		]);
+        ]);
         var options = {};
    <?php
    echo 'options[\'state\'] = \'{"sizeOption":"3","nonSelectedAlpha":1,"dimensions":{"iconDimensions":["dim0"]},"yZoomedDataMin":1,"iconKeySettings":[],"xZoomedDataMax":586396800000,"yZoomedIn":false,"iconType":"BUBBLE","showTrails":false,"xLambda":1,"yAxisOption":"2","playDuration":15000,"uniColorForNonSelected":false,"xZoomedIn":false,"xAxisOption":"_TIME","yLambda":1,"orderedByX":false,"time":"1988","xZoomedDataMin":567993600000,"colorOption":"_UNIQUE_COLOR","duration":{"multiplier":1,"timeUnit":"D"},"orderedByY":false}\';';
    ?>
-		options['width'] = 910;
+        options['width'] = 910;
         options['height'] = 400;
         options['showXMetricPicker'] = false;
         options['showAdvancedPanel'] = false;
         options['showSelectListComponent'] = false;
         var motionchart = new google.visualization.MotionChart(
-		document.getElementById('visualization'));
-		motionchart.draw(data, options);
-	}
+        document.getElementById('visualization'));
+        motionchart.draw(data, options);
+    }
 
-	google.setOnLoadCallback(drawVisualization);
-	</script>
-	<div id="visualization" style="width:910px;height:400px;margin:auto;padding-top:50px;"></div><br />
-	<?php
+    google.setOnLoadCallback(drawVisualization);
+    </script>
+    <div id="visualization" style="width:910px;height:400px;margin:auto;padding-top:50px;"></div><br />
+   <?php
    //The TreeMap painting code and html code are here...
    $finalURL = "['Learning Resource', 'Information','Accessed'],\n";
    $finalURL = $finalURL . "['Learning Resource', null, 0],\n";
@@ -1089,21 +1089,21 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
    }
 
    ?>
-	<script type="text/javascript" src="//www.google.com/jsapi"></script>
+    <script type="text/javascript" src="//www.google.com/jsapi"></script>
     <script type="text/javascript">
     google.load('visualization', '1', {packages: ['corechart']});
     </script>
     <script type="text/javascript">
     function drawVisualization() {
-    	// Create and populate the data table.
-    	var data = google.visualization.arrayToDataTable([
-    	['Location', 'Total Pageviews'],
-    	<?php echo $dataview;?>
-    	]);
+        // Create and populate the data table.
+        var data = google.visualization.arrayToDataTable([
+        ['Location', 'Total Pageviews'],
+   <?php echo $dataview;?>
+        ]);
 
-    	// Create and draw the visualization.
-    	new google.visualization.PieChart(document.getElementById('visualization')).
-    	draw(data, {title:"Visits by users location"});
+        // Create and draw the visualization.
+        new google.visualization.PieChart(document.getElementById('visualization')).
+        draw(data, {title:"Visits by users location"});
     }
 
     google.setOnLoadCallback(drawVisualization);
@@ -1233,7 +1233,7 @@ function display_forum_view($courseid, $MinDate = 0, $MaxDate = 0)
                         google.setOnLoadCallback(drawVisualization);
                     </script>";
    if($rN == 0)
-      echo "<b>No forum data is availabe.</b> " . $MinDate . " - " . $MaxDate;
+      echo "<b>No forum data is availabe for the period of: " . $MinDate . " and " . $MaxDate . ".</b>";
    echo '<center><div id="visualization" style="width: 700px; height: 500px;"></div></center><br />';
    //the second chart start here...
 
@@ -1316,18 +1316,39 @@ function display_forum_view($courseid, $MinDate = 0, $MaxDate = 0)
 
 function getLog($courseid, $Flag = 0)
 {
-   //ini_set('display_errors', 1);
-   //error_reporting( ~ 0);
-   ini_set('memory_limit', '-1');
+   /* just for dev
+   ini_set('display_errors', 1);
+   error_reporting( ~ 0);*/
+
    global $CFG, $DB, $COURSE, $USER, $SESSION;
-   set_time_limit(300);
-   date_default_timezone_set("GMT");
+
    require_once($CFG->dirroot . '/course/lib.php');
    require_once($CFG->dirroot . '/report/log/locallib.php');
    require_once($CFG->libdir . '/adminlib.php');
    require_once($CFG->libdir . '/csvlib.class.php');
 
-   //error_reporting(E_ALL ^ E_NOTICE);
+   ini_set('memory_limit', '-1');
+   set_time_limit(300);
+   date_default_timezone_set("GMT");
+   $indeces = array();
+   $CourseName = array();
+   $DateandTime = array();
+   $Username = array();
+   $IPAddress = array();
+   $FirstName = array();
+   $LastName = array();
+   $Email = array();
+   $Activity = array();
+   $Action = array();
+   $URL = array();
+   $Information = array();
+   $RoleID = array();
+   $DateOnly = array();
+   $UnixDateTime = array();
+   $UserType = array();
+   $City = array();
+   $InformationID = array();
+   $UserID = array();
 
    if($Flag != 5)
    {
@@ -1372,104 +1393,41 @@ function getLog($courseid, $Flag = 0)
       //accessing the GeoDatabase file.
       $gi = geoip_open($CFG->dirroot . "/blocks/keats/geolib/GeoLiteCity.dat", GEOIP_STANDARD);
    }
-   /*
-   $sql = 'SELECT c.fullname AS CourseName, from_unixtime(l.time) AS DateandTime, u.username AS Username,
-   l.ip AS IPAddress, u.firstname AS FirstName, u.lastname AS LastName, u.email AS Email, l.module As Activity,
-   l.action As Action, l.url As URL, rc.name AS Information, r.roleid AS RoleID, l.userid AS UserID, c.id as CourseID
-   FROM {log} l, {user} u, {role_assignments} r, {course} c, {resource} rc
-   WHERE r.userid = l.userid AND rc.id = l.info AND c.id = ' . $courseid;//c.fullname like :coursenamevar';
-   */
-   $sql = "SELECT c.fullname AS CourseName, from_unixtime(l.time) AS DateandTime,u.username Username,
-           l.ip IPAddress, u.firstname FirstName, u.lastname LastName, u.email Email, l.module Activity,
-           l.action Action, l.url URL, rc.name AS Information, l.userid AS UserID, l.info AS InformationID,
-           rle.shortname UserRole
-
-           FROM {log} l LEFT JOIN {user} u ON l.userid = u.id
-           LEFT JOIN {resource} rc ON rc.id = l.info
-           LEFT JOIN {course} c ON c.id = l.course
-           LEFT JOIN {role_assignments} rl ON rl.userid = l.userid
-           LEFT JOIN {role} rle ON rle.id = rl.roleid
-
-           WHERE c.id = " . $courseid . "
-           ";
-
-   $CountSQL = "SELECT count(l.userid) FROM {log} l, {user} u, {role_assignments} r, {course} c, {resource} rc
-                WHERE r.userid = l.userid AND c.id = " . $courseid;
-
-   if($Flag == 0 || $Flag == 5)
-   {
-      //$sql = $sql . " GROUP BY u.username, l.time order by l.time DESC";
-      $sql = $sql . " GROUP BY u.username, l.time order by DateandTime asc;";
-   }
-   elseif($Flag == 1)
-   {
-      //$sql = $sql . " GROUP BY u.username ORDER BY u.username Asc";
-      $sql = $sql . " GROUP BY u.username, l.time ORDER BY Username Asc";
-   }
-   elseif($Flag == 2)
-   {
-      $sql = $sql . " GROUP BY u.username ORDER BY u.username Desc";
-      //$sql = $sql . " GROUP BY Username ORDER BY Username Desc";
-   }
-
-   $indeces = array();
-   $CourseName = array();
-   $DateandTime = array();
-   $Username = array();
-   $IPAddress = array();
-   $FirstName = array();
-   $LastName = array();
-   $Email = array();
-   $Activity = array();
-   $Action = array();
-   $URL = array();
-   $Information = array();
-   $RoleID = array();
-   $DateOnly = array();
-   $UnixDateTime = array();
-   $UserType = array();
-   $City = array();
-   // and
-   $InformationID = array();
-   $UserID = array();
 
    $recNo = 0;
 
    $context = get_context_instance(CONTEXT_COURSE, $courseid);
-   //$context = get_context_instance(CONTEXT_SYSTEM);
-
-   //ini_set('memory_limit', '-1');
-   //$rs = $DB->get_recordset_sql($sql, $params);
-
    $OverFlow = 0;
 
-   $params = array(null);
-   $all_records_count = $DB->count_records_sql($CountSQL, $params);
-
-   $rs = $DB->get_recordset_sql($sql);
-
+   $params = array();
+   $selector = "l.course = :courseid";
+   $params['courseid'] = $courseid;
+   $rs = get_logs($selector, $params, $order, $limitfrom, $limitnum, $totalcount);//Moodle Function
    //set_time_limit(7200);  //2 hours
 
-   while($rs->valid())
+   foreach($rs as &$recv)
    {
       $L = 1;
-      $recv = $rs->current();
-      foreach($recv as $index=>$val)
+      foreach($recv as &$val)
       {
-         if($L == 1)
+         if($L == 1) //["id"]
          {
             $indeces[$recNo] = $recNo;
-            $CourseName[$recNo] = $val;
+            $CourseName[$recNo] = getSQLFromDB("select fullname from {course} where id = " . $courseid);//$DB->get_record('course', array('id'=>$courseid), 'fullname', MUST_EXIST);//$val;
          }
-         if($L == 2)
+         if($L == 2) //["time"]
          {
-            $UnixDateTime[$recNo] = strtotime($val);//Unix Time stamp
+            $UnixDateTime[$recNo] = $val;//Unix Time stamp
             $DateOnly[$recNo] = gmdate("d-m-Y", $UnixDateTime[$recNo]);//dd-mm-yyyy
             $DateandTime[$recNo] = gmdate("d-m-Y H:i:s", $UnixDateTime[$recNo]);//dd-mm-yyyy HH:MM:SS
          }
-         if($L == 3)
-            $Username[$recNo] = $val;
-         if($L == 4)
+         if($L == 3) //["userid"]
+         {
+            $Username[$recNo] = getSQLFromDB('select username from {user} where id = ' . $val);// $DB->get_record('user', array('id'=>$val), 'username', MUST_EXIST);//$val;
+            $sel_user_id = $val;
+            $UserID[$recNo] = $val;
+         }
+         if($L == 4) //["ip"]
          {
             $IPAddress[$recNo] = $val;
             if($Flag != 5)
@@ -1501,57 +1459,47 @@ function getLog($courseid, $Flag = 0)
                $City[$recNo] = $val;
             }
          }
-         if($L == 5)
-            $FirstName[$recNo] = $val;
          if($L == 6)
-            $LastName[$recNo] = $val;
-         if($L == 7)
-            $Email[$recNo] = $val;
-         if($L == 8)
+            //["module"]
             $Activity[$recNo] = $val;
-         if($L == 9)
+         if($L == 8)
+            //["action"]
             $Action[$recNo] = $Activity[$recNo] . ">" . $val;
-         if($L == 10)
+         if($L == 9)
+            //["url"]
             $URL[$recNo] = $val;
-         if($L == 11)
+         if($L == 10) //["info"]
          {
-            $info = $val;
+            $SSQL = "select name from {resource} where id = " . $val;
+            $info = getSQLFromDB($SSQL);
             $info = format_string($info);
             $info = strip_tags(urldecode($info));// Some XSS protection
             $Information[$recNo] = $info;
          }
+         if($L == 11)
+            //["firstname"]
+            $FirstName[$recNo] = $val;
          if($L == 12)
+            //["lastname"]
+            $LastName[$recNo] = $val;
+         if($L == 13) //["RoleID"]
          {
-            $sel_user_id = $val;
-            $UserID[$recNo] = $sel_user_id;
-         }
-         if($L == 13)
-         {
-            $InformationID[$recNo] = $val;
-         }
-         if($L == 14)
-         {
-            $user_role = $val;
-
-            if(is_null($user_role))
+            $user_role_assignment = getSQLFromDB("select roleid from {role_assignments} where userid = " . $sel_user_id);
+            try
+            {
+               $user_role = getSQLFromDB("select shortname from {role} where id = " . $user_role_assignment);
+               $UType = $user_role;
+            }
+            catch(Exception$e)
             {
                $UType = "Other User";
             }
-            else
-            {
-               $UType = $user_role;
-            }
-
             $UserType[$recNo] = $UType;
          }
          $L++;
       }
-      $rs->next();
       $recNo++;
    }
-
-   $rs->close();
-
    $DataStructure = array("Index"=>$indeces,
                           "Course"=>$CourseName,
                           "DateOnly"=>$DateOnly,
@@ -1618,7 +1566,7 @@ function IPAddressCheck($RangeIP, $CampusNameArr, $checkip)
 
 function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
 {
-   $DClass = $DataClass;//$_SESSION['DataClass'];
+   $DClass = $DataClass;
    $Answer = 0;
    $DataDate = $DClass["Date/Time"];
    $DataAction = $DClass["Action"];
@@ -1642,4 +1590,19 @@ function CountSetAllUsers($DataClass, $ActivityName, $ActionName, $InsDate)
       }
    }
    return $Answer;
+}
+
+function getSQLFromDB($SQL)
+{
+   global $DB;
+   $SQL = $SQL . ";";
+   try
+   {
+      $Rec = $DB->get_field_sql($SQL);
+      return $Rec;
+   }
+   catch(Exception$e)
+   {
+      return "NULL";
+   }
 }
