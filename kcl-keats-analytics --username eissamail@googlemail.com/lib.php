@@ -122,6 +122,7 @@ function display_pageview($courseid)
 
 function display_learning_design($courseid)
 {
+   global $CFG;
    $url = $CFG->wwwroot . '/blocks/keats/view.php?courseid=' . $courseid . '#tab5';
    $data = "<form action='$url' method='post'>";
    $data .= "<table>";
