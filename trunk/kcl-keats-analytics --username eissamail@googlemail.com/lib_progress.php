@@ -743,6 +743,7 @@ function user_has_accessed_course($courseid, $userid)
    //return $DB->get_record('log', array('course'=>$courseid,'userid'=>$userid),'id');
    $sql = "SELECT COUNT(userid) FROM {log} WHERE course = '" . $courseid . "' AND userid = '" . $userid . "'";
    //Modified by: EISSA CREATIONS LIMITED, to fix the bug of being not calculating the summary table data after applying the date filter. @Fri 25 Apr 2014 15:35:47 BST
+  // bug fixed in show_course_views_summary()
    if($FILTERDATES && $from && $to)
    {
       $sql .= " AND time >= '" . $from . "'";
@@ -753,6 +754,7 @@ function user_has_accessed_course($courseid, $userid)
 }
 
 /**
+ * DEPRECATED, BUG FIXED
  * SPECIAL FUNCTION for the Course Summary table: Check whether user has accessed a course
  *
  * @param int courseid
@@ -775,7 +777,6 @@ function user_has_accessed_course_sp($courseid, $userid)
    $sql .= ";";
    return $DB->count_records_sql($sql) > 0;
 }
-
 
 /**
  * Get course assignments
@@ -1717,6 +1718,7 @@ function display_progress_tracker_chart_include($courseid)
    {
       if( ! in_array($heading, $include_fields))
          continue;
+      if ($heading == "done") $heading = "Done?";
       echo '<th>' . (ucfirst(str_replace('_', ' ', $heading))) . '</th>';
    }
    echo '</thead>';
@@ -1795,8 +1797,14 @@ function display_progress_tracker_chart_include($courseid)
 //Modified by EISSA CREATIONS LIMITED, To add the "As on $LDate" in the summary table. @Fri 25 Apr 2014 15:44:01 BST
 function show_course_views_summary($courseid, $LDate)
 {
-
    global $OUTPUT;
+   global $FILTERDATES, $from, $to;   
+   
+   if($FILTERDATES && $from && $to) {
+      // convert dates to unixtime, after changing '/' to '-' to force UK time format 
+      $to = strtotime(str_replace('/', '-', $to));
+      $from = strtotime(str_replace('/', '-', $from));
+   }   
 
    echo '<h3>' . 'Course views summary' . '</h3>' . "\n";
 
@@ -1811,8 +1819,8 @@ function show_course_views_summary($courseid, $LDate)
    // loop through, check and count
    foreach($users_on_course as $userid)
    {
-      //Modified by EISSA CREATIONS LIMITED, To add the "As on $LDate" in the summary table. @Fri 25 Apr 2014 15:44:01 BST
-      $has_accessed = user_has_accessed_course_sp($courseid, $userid);
+      //Modified by EISSA CREATIONS LIMITED, To add the "As on $LDate" in the summary table. @Fri 25 Apr 2014 15:44:01 BST // BC - fixed
+      $has_accessed = user_has_accessed_course($courseid, $userid);
       if(is_student_on_course($courseid, $userid))
       {
          $NoOfEnrolledStudents++;
@@ -1868,4 +1876,4 @@ function show_course_views_summary($courseid, $LDate)
 
    return;
 }
-
+
