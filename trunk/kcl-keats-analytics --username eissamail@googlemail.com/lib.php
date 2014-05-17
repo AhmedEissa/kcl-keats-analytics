@@ -141,6 +141,126 @@ function display_learning_design_chart($courseid, $MinDate = 0, $MaxDate = 0)
    echo "Under Construction...";
 }
 
+function display_modules_summary_table($courseid)
+{
+   set_time_limit(300);
+   date_default_timezone_set("GMT");
+   $data = '<table width="100%" cellpadding="3" cellspacing="0" class = "format_table">
+            <th>Activity</th>
+            <th>Students Access</th>
+            <th>Students Page Views</th>
+            <th>Other Users Access</th>
+            <th>Other Users Page Views</th>
+            <th>Total Users Access</th>
+            <th>Total Views Page Views</th>
+            <th>Last Accessed Date</th>';
+
+   $DataStruct = getLog($courseid);
+   $Info = $DataStruct["Information"];
+   $UxDateTime = $DataStruct["Unix_Date/Time"];
+   $UserTypes = $DataStruct["User_Type"];
+   $ScannedInfo = array();
+   foreach($Info as $Index=>$Value)
+   {
+      if( ! in_array($Value, $ScannedInfo) &&  ! is_null($Value) && $Value != "" && $Value != "NULL")
+      {
+         $Accesses = getAccess($Value, $courseid);
+         $Pageviews = getPageViews($Value, $courseid);
+
+         $arrAccess = explode("|", $Accesses);
+         $arrPageviews = explode("|", $Pageviews);
+
+         $StudentAccess = $arrAccess[0];
+         $StudentPV = $arrPageviews[0];
+         $OthersAccess = $arrAccess[1];
+         $OthersPV = $arrPageviews[1];
+
+         $TotalAccess = $StudentAccess + $OthersAccess;
+         $TotalPV = $StudentPV + $OthersPV;
+
+         $data = $data . '<tr align="center">
+                        <td colspan="" rowspan="" headers="">' . $Value . '</td>
+                        <td colspan="" rowspan="" headers="">' . $StudentAccess . '</td>
+                        <td colspan="" rowspan="" headers="">' . $StudentPV . '</td>
+                        <td colspan="" rowspan="" headers="">' . $OthersAccess . '</td>
+                        <td colspan="" rowspan="" headers="">' . $OthersPV . '</td>
+                        <td colspan="" rowspan="" headers="">' . $TotalAccess . '</td>
+                        <td colspan="" rowspan="" headers="">' . $TotalPV . '</td>
+                        <td colspan="" rowspan="" headers="">' . date("D d / M / Y H:i:s", $UxDateTime[$Index]) . '</td>
+                    </tr>';
+         $ab++;
+      }
+      array_push($ScannedInfo, $Value);
+
+      if($ab >= 10)
+         break;//to show only the top 10.
+   }
+   $data = $data . "</table>";
+   echo $data;
+}
+
+function getAccess($RInfo, $courseid)
+{
+   $DataStruct = getLog($courseid);
+   $Info = $DataStruct["Information"];
+   $UserTypes = $DataStruct["User_Type"];
+   $Users = $DataStruct["Users"];
+
+   $arrPushedUsers = array();
+   $StudentCounter = 0;
+   $OthersCounter = 0;
+   foreach($Info as $Index=>$Value)
+   {
+      if($Value == $RInfo)
+      {
+         if($UserTypes[$Index] == "student")
+         {
+            if( ! in_array($Users[$Index], $arrPushedUsers))
+            {
+               $StudentCounter++;
+            }
+            array_push($arrPushedUsers, $Users[$Index]);
+         }
+         elseif($UserTypes[$Index] != "student")
+         {
+            if( ! in_array($Users[$Index], $arrPushedUsers))
+            {
+               $OthersCounter++;
+            }
+            array_push($arrPushedUsers, $Users[$Index]);
+         }
+      }
+   }
+   $Answer = $StudentCounter . "|" . $OthersCounter;
+   return $Answer;
+}
+
+function getPageViews($RInfo, $courseid)
+{
+   $DataStruct = getLog($courseid);
+   $Info = $DataStruct["Information"];
+   $UserTypes = $DataStruct["User_Type"];
+   $StudentsCounter = 0;
+   $OthersCounter = 0;
+
+   foreach($Info as $Index=>$Value)
+   {
+      if($Value == $RInfo)
+      {
+         if($UserTypes[$Index] == "student")
+         {
+            $StudentsCounter++;
+         }
+         else
+         {
+            $OthersCounter++;
+         }
+      }
+   }
+   $Answer = $StudentsCounter . "|" . $OthersCounter;
+   return $Answer;
+}
+
 function display_progress_tracker($courseid)
 {
    return display_progress_tracker_include($courseid);
@@ -488,7 +608,10 @@ function display_pageview_chart($courseid, $MinDate = 0, $MaxDate = 0)
     google.setOnLoadCallback(drawVisualization);
     </script>
     <div id="visualization" style="width:910px;height:400px;margin:auto;padding-top:50px;"></div><br />
+    <h1>Module Summary Table for top 10 modules.</h1><br />
    <?php
+   //Display the module summary table here for top 10 results.
+   display_modules_summary_table($courseid);
    //The TreeMap painting code and html code are here...
    $finalURL = "['Learning Resource', 'Information','Accessed'],\n";
    $finalURL = $finalURL . "['Learning Resource', null, 0],\n";
