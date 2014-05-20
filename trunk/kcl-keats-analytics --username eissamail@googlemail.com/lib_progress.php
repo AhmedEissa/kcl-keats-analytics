@@ -11,9 +11,9 @@
  * TODO: Fix indentation
  */
 
-/* just for dev
-error_reporting(7);
-ini_set('display_errors', 'On');*/
+// just for dev
+/*error_reporting(7);
+ini_set('display_errors', 'On'); //*/
 
 define('DISPLAY_LIMIT_MAIN', 15);
 define('DISPLAY_LIMIT_BLOCK', 3);
@@ -227,6 +227,21 @@ function get_course_modules_info($courseid)
       $result[$c]->href = $CFG->wwwroot . '/mod/' . $result[$c]->modname . '/view.php?id=' . $result[$c]->id;// ?
    }
    return $result;
+}
+
+/**
+ * Helper: Get single module information 
+ *
+ * @param int courseid
+ * @param int moduleid
+ * @return array of fields
+ */
+function get_course_module_info($courseid, $moduleid)
+{
+	$modules = get_course_modules_info($courseid);
+	foreach ($modules as $module) {
+		if ($module->id == $moduleid) return $module;
+	}
 }
 
 /**
@@ -497,12 +512,12 @@ function parse_moduleid_from_actionurl($actionurl)
 }
 
 /**
- * Helper: Get trackable module types
+ * Helper: Get "reportable" module types
  *
  * @param int courseid
  * @return array string
  */
-function get_trackable_module_types($courseid)
+function get_reportable_module_types($courseid)
 {
    // get unique module types to check for
    $modules = get_course_modules_info($courseid);
@@ -535,7 +550,7 @@ function get_course_modules_recently_accessed($courseid, $number = DISPLAY_LIMIT
    global $FILTERDATES, $from, $to;
 
    $modules = get_course_modules_info($courseid);
-   $module_types = get_trackable_module_types($courseid);
+   $module_types = get_reportable_module_types($courseid);
 
    // get $number unique module accesses
    $recent_accesses = array();
@@ -681,6 +696,161 @@ function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role
       $accesses++;
    }
    return $accesses;
+}
+
+/**
+ * Get all module accesses breakdown
+ *
+ * Module types filtered for inclusion in show_module_accesses_breakdown()
+ *
+ * @param int courseid
+ * @return array of module ids with access details
+ */
+function get_course_module_accesses_breakdown($courseid)
+{
+
+   global $CFG, $DB, $LOG, $MODE;
+   global $FILTERDATES, $from, $to;
+
+   $module_records = array();
+   $last_url = NULL; $last_user = NULL; 
+   foreach($LOG['Index'] as $index)
+   {
+
+      // check date filters
+      if($FILTERDATES && $from && $to)
+      {
+         if ($LOG['Unix_Date/Time'][$index] < $from) continue;
+         if ($LOG['Unix_Date/Time'][$index] > $to) break;
+      }
+      
+      // skip if same url and same user repeats sequentially (equals same access)
+      if ($LOG['ActionURL'][$index] == $last_url && $LOG['UserID'][$index] == $last_user) continue;
+      $last_url = $LOG['ActionURL'][$index];
+      $last_user =  $LOG['UserID'][$index];
+      
+      $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);      
+
+      // create module record if not already exists
+      if (!array_key_exists($moduleid,$module_records)) {
+      	$module_records[$moduleid] = array();
+      	$module_records[$moduleid]['student_pageviews'] = 0;
+      	$module_records[$moduleid]['other_pageviews'] = 0;
+        $module_records[$moduleid]['students'] = array();
+      	$module_records[$moduleid]['others'] = array();
+      	$module_records[$moduleid]['accessed'] = $LOG['Unix_Date/Time'][$index];
+      }
+
+      // compute accesses
+      if( ! is_student_on_course($courseid, $LOG['UserID'][$index])) {
+      	$module_records[$moduleid]['student_pageviews']++;
+      	if (!in_array($LOG['UserID'][$index],$module_records[$moduleid]['students'])) $module_records[$moduleid]['students'][] = $LOG['UserID'][$index];
+      }
+      else {
+      	$module_records[$moduleid]['other_pageviews']++;
+      	if (!in_array($LOG['UserID'][$index],$module_records[$moduleid]['others'])) $module_records[$moduleid]['others'][] = $LOG['UserID'][$index];
+      }
+    }
+
+   return $module_records;
+}
+
+
+/** show module accesses breakdown table 
+ *
+ * @param courseid
+ * @return void -> html
+ */
+function show_module_accesses_breakdown($courseid)
+{
+    global $OUTPUT, $MODE;
+
+	$module_accesses = get_course_module_accesses_breakdown($courseid);
+	
+    $module_types = get_reportable_module_types($courseid);
+    
+    echo '<h3>'.'Activity accesses'.'</h3>' . "\n";
+    
+   echo '<p><small>Showing activity types: ';
+   $output = "";
+   foreach($module_types as $module)$output .= $module . ', ';
+   $output = substr($output, 0, strlen($output) - 2); // remove ', '
+   echo $output;
+   echo '</small></p>';    
+   
+   // TODO http://www.datatables.net/release-datatables/examples/advanced_init/complex_header.html
+	echo '<table width="100%" cellpadding="3" cellspacing="0" class = "datatable format_table">';	
+	
+/*    echo '
+    <thead>
+    <tr>
+    <th>Activity</th>
+    <th>Student Views</th>
+    <th>Individual Students</th>
+    <th>Other Views</th>
+    <th>Individual Others</th>
+    <th>Last accessed</th>
+    </tr>
+    </thead>';
+*/
+
+	echo '
+    <thead>
+    <tr>
+    <th rowspan="2">Activity</th>
+    <th colspan="2">Students</th>
+    <th colspan="2">Others</th>
+    <th rowspan="2">Last accessed</th>
+    </tr>
+    <tr>    
+    <th>Total views</th>
+    <th>Individuals</th>
+    <th>Total views</th>
+    <th>Individuals</th>
+    </tr>
+    </thead>';
+
+    
+    echo '<tbody>';
+    foreach ($module_accesses as $key => $module_access) {
+    
+        // get user details for hover info
+        $students = array_map(function($value) { return get_username_from_userid($value); }, $module_access['students']);
+        $others = array_map(function($value) { return get_username_from_userid($value); }, $module_access['others']);
+    
+		echo '<tr>';
+    	$module_info = get_course_module_info($courseid, $key);
+    	//if ( trim($module_info->name) == "" || $module_info->name == NULL) continue;
+    	if (!in_array($module_info->modname,$module_types)) continue;
+	   	echo '<td>';
+        echo '<a href="' . $module_info->href . '" title = "' . $module_info->name. '">';
+        echo '<img src = "' . $OUTPUT->pix_url('icon', $module_info->modname) . '" alt = "' . $module_info->modname . '" title = "' . $module_info->modname . '"/>' . '&nbsp;';
+        echo $module_info->name;
+        echo '</a>';
+    	echo '</td>';
+    	echo '<td>';
+    	echo $module_access['student_pageviews'];
+    	echo '</td>';
+    	echo '<td>';
+      echo '<span title = "'; foreach ($students as $user) echo $user.' '; echo '">';
+    	echo count($module_access['students']);
+    	echo '</span>';
+    	echo '</td>';
+    	echo '<td>';
+    	echo $module_access['other_pageviews'];
+    	echo '</td>';
+    	echo '<td>';
+    	echo '<span title = "'; foreach ($others as $user) echo $user.' '; echo '">';
+    	echo count($module_access['others']);
+    	echo '</span>';
+    	echo '</td>';
+    	echo '<td>';
+    	echo date("D, j F Y H:i", $module_access['accessed']);
+    	echo '</td>';
+    	echo '</tr>';
+    }
+    echo '</tbody>';    
+    echo '</table>';
 }
 
 /**
@@ -1170,10 +1340,15 @@ function display_progress_tracker_include($courseid)
                 .dataTables_info { opacity: 0.75; margin-top: 0.25em; }
              </style>';
    $data .= "<script>
+   
+   //window.onerror = function() { return true; } 
 
     window.addEventListener('load', function() { // XXX: addEventListener !IE8
        if (window.existingload) window.existingload();
        $(document).ready(function() {
+       
+           $.fn.dataTableExt.sErrMode = 'throw'; // temp disable data tables error alerts
+       
            $('.datatable').dataTable( {
                 'iDisplayLength': " . DISPLAY_LIMIT_MAIN . ",
                 'bPaginate': true,
@@ -1522,7 +1697,7 @@ function display_progress_tracker_chart_include($courseid)
    echo '</h3>' . "\n";
 
    // show what modules are tracked
-   $tracked_modules = get_trackable_module_types($courseid);
+   $tracked_modules = get_reportable_module_types($courseid);
    echo '<p><small>Showing activity types: ';
    $output = "";
    foreach($tracked_modules as $module)$output .= $module . ', ';
@@ -1873,6 +2048,9 @@ function show_course_views_summary($courseid, $LDate)
    echo $htmlTable;
 
    echo '<p><small><strong>Note:</strong> Shows only <em>current</em> enrollments.</small></p>';
+
+   // test get_course_module_accesses_breakdown($courseid)
+   show_module_accesses_breakdown($courseid);
 
    return;
 }
