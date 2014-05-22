@@ -699,6 +699,17 @@ function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role
 }
 
 /**
+ * Helper: Check  if actionurl (from log) is a module access
+ *
+ * @param string actionurl
+ * @return bool
+ */
+function is_module_access($actionurl)
+{
+    return strpos($actionurl,"/mod") > -1;
+}
+
+/**
  * Get all module accesses breakdown
  *
  * Module types filtered for inclusion in show_module_accesses_breakdown()
@@ -713,9 +724,10 @@ function get_course_module_accesses_breakdown($courseid)
    global $FILTERDATES, $from, $to;
 
    $module_records = array();
-   $last_url = NULL; $last_user = NULL; 
    foreach($LOG['Index'] as $index)
    {
+       
+      if (!is_module_access($LOG['ActionURL'][$index])) continue;
 
       // check date filters
       if($FILTERDATES && $from && $to)
@@ -723,13 +735,9 @@ function get_course_module_accesses_breakdown($courseid)
          if ($LOG['Unix_Date/Time'][$index] < $from) continue;
          if ($LOG['Unix_Date/Time'][$index] > $to) break;
       }
-      
-      // skip if same url and same user repeats sequentially (equals same access)
-      if ($LOG['ActionURL'][$index] == $last_url && $LOG['UserID'][$index] == $last_user) continue;
-      $last_url = $LOG['ActionURL'][$index];
-      $last_user =  $LOG['UserID'][$index];
-      
-      $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);      
+            
+      $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);
+      if ($moduleid == NULL) continue;
 
       // create module record if not already exists
       if (!array_key_exists($moduleid,$module_records)) {
@@ -778,22 +786,7 @@ function show_module_accesses_breakdown($courseid)
    echo $output;
    echo '</small></p>';    
    
-   // TODO http://www.datatables.net/release-datatables/examples/advanced_init/complex_header.html
-	echo '<table width="100%" cellpadding="3" cellspacing="0" class = "datatable format_table">';	
-	
-/*    echo '
-    <thead>
-    <tr>
-    <th>Activity</th>
-    <th>Student Views</th>
-    <th>Individual Students</th>
-    <th>Other Views</th>
-    <th>Individual Others</th>
-    <th>Last accessed</th>
-    </tr>
-    </thead>';
-*/
-
+	echo '<table width="100%" cellpadding="3" cellspacing="0" class = "datatable format_table">';		
 	echo '
     <thead>
     <tr>
@@ -803,54 +796,65 @@ function show_module_accesses_breakdown($courseid)
     <th rowspan="2">Last accessed</th>
     </tr>
     <tr>    
-    <th>Total views</th>
+    <th>Total accesses</th>
     <th>Individuals</th>
-    <th>Total views</th>
+    <th>Total accesses</th>
     <th>Individuals</th>
     </tr>
     </thead>';
 
-    
+    echo "\n";    
     echo '<tbody>';
-    foreach ($module_accesses as $key => $module_access) {
-    
+    echo "\n";    
+    foreach ($module_accesses as $key => $module_access) {   
         // get user details for hover info
         $students = array_map(function($value) { return get_username_from_userid($value); }, $module_access['students']);
         $others = array_map(function($value) { return get_username_from_userid($value); }, $module_access['others']);
     
-		echo '<tr>';
     	$module_info = get_course_module_info($courseid, $key);
+        
     	//if ( trim($module_info->name) == "" || $module_info->name == NULL) continue;
     	if (!in_array($module_info->modname,$module_types)) continue;
+        
+		echo '<tr>';
+        echo "\n";        
+        
 	   	echo '<td>';
         echo '<a href="' . $module_info->href . '" title = "' . $module_info->name. '">';
         echo '<img src = "' . $OUTPUT->pix_url('icon', $module_info->modname) . '" alt = "' . $module_info->modname . '" title = "' . $module_info->modname . '"/>' . '&nbsp;';
         echo $module_info->name;
         echo '</a>';
     	echo '</td>';
+        echo "\n";        
     	echo '<td>';
     	echo $module_access['student_pageviews'];
     	echo '</td>';
+        echo "\n";        
     	echo '<td>';
       echo '<span title = "'; foreach ($students as $user) echo $user.' '; echo '">';
     	echo count($module_access['students']);
     	echo '</span>';
     	echo '</td>';
+        echo "\n";        
     	echo '<td>';
     	echo $module_access['other_pageviews'];
     	echo '</td>';
+        echo "\n";        
     	echo '<td>';
     	echo '<span title = "'; foreach ($others as $user) echo $user.' '; echo '">';
     	echo count($module_access['others']);
     	echo '</span>';
     	echo '</td>';
+        echo "\n";        
     	echo '<td>';
     	echo date("D, j F Y H:i", $module_access['accessed']);
     	echo '</td>';
+        echo "\n";        
     	echo '</tr>';
+        echo "\n";        
     }
     echo '</tbody>';    
-    echo '</table>';
+    echo '</table>';   
 }
 
 /**
@@ -1341,8 +1345,6 @@ function display_progress_tracker_include($courseid)
              </style>';
    $data .= "<script>
    
-   //window.onerror = function() { return true; } 
-
     window.addEventListener('load', function() { // XXX: addEventListener !IE8
        if (window.existingload) window.existingload();
        $(document).ready(function() {
@@ -1959,7 +1961,10 @@ function display_progress_tracker_chart_include($courseid)
       }
 
    echo '<p style="margin-top: 1.6em; text-align: center;"><small>Note: These progress analytics reflect <em>current</em> students only.</small></p>';
-
+   
+   // test get_course_module_accesses_breakdown($courseid)
+   show_module_accesses_breakdown($courseid);         
+   
    return;
 }
 
@@ -2048,10 +2053,7 @@ function show_course_views_summary($courseid, $LDate)
    echo $htmlTable;
 
    echo '<p><small><strong>Note:</strong> Shows only <em>current</em> enrollments.</small></p>';
-
-   // test get_course_module_accesses_breakdown($courseid)
-   show_module_accesses_breakdown($courseid);
-
+   
    return;
 }
 
