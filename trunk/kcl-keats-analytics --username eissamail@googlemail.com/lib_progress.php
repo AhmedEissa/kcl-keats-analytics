@@ -104,9 +104,9 @@ function build_Log($courseid)
    $data = "";
 
    if( ! isset($LOG))
-      $LOG = getLog($courseid);
+      $LOG = getLog($courseid,5);
 
-   $data .= '<table class="datatable format_table">';
+   $data .= '<table class="/*datatable */format_table">';
    $data .= '<thead>';
    $data .= '<tr>';
    $keys = array();
@@ -700,6 +700,7 @@ function get_course_module_accesses($courseid, $moduleid, $uniques = true, $role
 
 /**
  * Helper: Check  if actionurl (from log) is a module access
+ * Not accurate for non-student users
  *
  * @param string actionurl
  * @return bool
@@ -719,25 +720,63 @@ function is_module_access($actionurl)
  */
 function get_course_module_accesses_breakdown($courseid)
 {
-
    global $CFG, $DB, $LOG, $MODE;
    global $FILTERDATES, $from, $to;
-
+   
+   //show_log();
+   
+   $module_types = get_reportable_module_types($courseid);
+    
+   $last = array ( // to store previously counted access to try prevent duplicate counting
+       'module_type' => NULL,
+       'moduleid' => NULL,
+       'date' => NULL,
+       'userid' => NULL,
+   );
    $module_records = array();
    foreach($LOG['Index'] as $index)
    {
-       
-      if (!is_module_access($LOG['ActionURL'][$index])) continue;
-
       // check date filters
       if($FILTERDATES && $from && $to)
       {
          if ($LOG['Unix_Date/Time'][$index] < $from) continue;
          if ($LOG['Unix_Date/Time'][$index] > $to) break;
-      }
-            
+      }       
+       
+      // get activity details
+      $view_access = strpos($LOG['Action'][$index],'view') > -1;
+      $module_type = strtolower($LOG['Activity'][$index]);
       $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);
-      if ($moduleid == NULL) continue;
+      
+      // check for inclusion
+      if (
+          $moduleid == NULL
+          ||
+          !in_array($module_type,$module_types)
+          ||
+          !($view_access)
+          ) {
+            continue;
+          }
+            
+       // check for duplicates
+       if (
+           $last->module_type == $module_type
+           && 
+           $last->moduleid == $moduleid
+           &&  
+           $last->date == $LOG['DateOnly']['Index']
+           && 
+           $last->userid == $LOG['UserID']['Index']
+       ) {
+            continue;
+       }
+       else {
+           $last->module_type = $module_type;
+           $last->moduleid = $moduleid;
+           $last->date = $LOG['DateOnly']['Index'];
+           $last->userid = $LOG['UserID']['Index'];
+       }
 
       // create module record if not already exists
       if (!array_key_exists($moduleid,$module_records)) {
@@ -750,7 +789,7 @@ function get_course_module_accesses_breakdown($courseid)
       }
 
       // compute accesses
-      if( ! is_student_on_course($courseid, $LOG['UserID'][$index])) {
+      if(is_student_on_course($courseid, $LOG['UserID'][$index])) {
       	$module_records[$moduleid]['student_pageviews']++;
       	if (!in_array($LOG['UserID'][$index],$module_records[$moduleid]['students'])) $module_records[$moduleid]['students'][] = $LOG['UserID'][$index];
       }
@@ -774,10 +813,10 @@ function show_module_accesses_breakdown($courseid)
     global $OUTPUT, $MODE;
 
 	$module_accesses = get_course_module_accesses_breakdown($courseid);
-	
+    	
     $module_types = get_reportable_module_types($courseid);
     
-    echo '<h3>'.'Activity accesses'.'</h3>' . "\n";
+    echo '<h3>'.'Activity view accesses'.'</h3>' . "\n";
     
    echo '<p><small>Showing activity types: ';
    $output = "";
@@ -792,7 +831,7 @@ function show_module_accesses_breakdown($courseid)
     <tr>
     <th rowspan="2">Activity</th>
     <th colspan="2">Students</th>
-    <th colspan="2">Others</th>
+    <th colspan="2">Others *</th>
     <th rowspan="2">Last accessed</th>
     </tr>
     <tr>    
@@ -855,6 +894,7 @@ function show_module_accesses_breakdown($courseid)
     }
     echo '</tbody>';    
     echo '</table>';   
+    echo '<br/><br/><p><small>* Others may include unknown user types if enrolments have changed.</small<</p>';
 }
 
 /**
@@ -1349,7 +1389,7 @@ function display_progress_tracker_include($courseid)
        if (window.existingload) window.existingload();
        $(document).ready(function() {
        
-           $.fn.dataTableExt.sErrMode = 'throw'; // temp disable data tables error alerts
+           //$.fn.dataTableExt.sErrMode = 'throw'; // temp disable data tables error alerts
        
            $('.datatable').dataTable( {
                 'iDisplayLength': " . DISPLAY_LIMIT_MAIN . ",
@@ -1357,6 +1397,7 @@ function display_progress_tracker_include($courseid)
                 'bLengthChange': true,
                 'bFilter': false,
                 'aaSorting': [], // switches off any default sorting
+                'lengthMenu': [ [10, 25, 50, 100, -1], [10, 25, 50, 100, 'All'] ],
            });
 
            $('#from').datepicker({ changeMonth: true, changeYear: true, dateFormat: 'yy-mm-dd',altFormat: 'yy-mm-dd',minDate: '0', showOn: 'both' });
