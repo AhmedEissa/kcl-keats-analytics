@@ -57,7 +57,7 @@ function getUserId()
    //return 3;
    //    return get_userid_from_username("student");
    //return get_userid_from_username("dental-student-tester01");
-   if($COURSE->id == 2)
+   if($COURSE->id == 2 || $COURSE->id == 8)
       return get_userid_from_username("student");
    else
       if($COURSE->id == 6)
@@ -90,6 +90,44 @@ function init_Log($courseid)
    if( ! isset($LOG))
       $LOG = getLog($courseid, 5);// use flag 5 to skip geo information, not needed for progress functions
 }
+
+/**
+ * Convert log record from [field][index],[field][index].. to array(field=>..,..)
+ *
+ * @param int log index
+ */
+function get_Log_record($index)
+{
+    global $LOG;
+    // get log, creating global $LOG variable
+    if( ! isset($LOG))
+        $LOG = getLog($courseid, 5);
+      
+    $record = array();
+    $record["Index"] = $LOG["Index"][$index];
+    $record["Course"] = $LOG["Course"][$index];
+    $record["DateOnly"] = $LOG["DateOnly"][$index];
+    $record["Date/Time"] = $LOG["Date/Time"][$index];
+    $record["Unix_Date/Time"] = $LOG["Unix_Date/Time"][$index];
+    $record["Users"] = $LOG["Users"][$index];
+    $record["IP"] = $LOG["IP"][$index];
+    $record["FirstName"] = $LOG["FirstName"][$index];
+    $record["LastName"] = $LOG["LastName"][$index];
+    $record["Email"] = $LOG["Email"][$index];
+    $record["Activity"] = $LOG["Activity"][$index];
+    $record["cmid"] = $LOG["cmid"][$index];
+    $record["Action"] = $LOG["Action"][$index];
+    $record["ActionURL"] = $LOG["ActionURL"][$index];
+    $record["Information"] = $LOG["Information"][$index];
+    $record["Location"] = $LOG["Location"][$index];
+    $record["User_Type"] = $LOG["User_Type"][$index];
+    $record["RecordsNo"] = $LOG["RecordsNo"][$index];
+    $record["UserID"] = $LOG["UserID"][$index];
+    $record["InformationID"] = $LOG["InformationID"][$index];
+    
+    return $record;
+}
+
 
 /**
  * Build table showing $LOG (for instrumentation)
@@ -498,14 +536,15 @@ function get_roles_summary($courseid)
 function parse_moduleid_from_actionurl($actionurl)
 {
    $moduleid = NULL;
+   /* breaking activity breakdown.
    if(strpos($actionurl, "mod") < 0)
-      return NULL;// looking for module accesses
+      return NULL;// looking for module accesses */
    if(strpos($actionurl, "id=") > -1)
    {
       $id = substr($actionurl, strpos($actionurl, 'id=') + 3);
-      if(is_numeric($id))
+      if(is_numeric(substr($id,0,1))) // handle urls like view.php?id=6§ionid=15 (whatever that is)
       {
-         $moduleid = $id;
+         $moduleid = (int) $id;
       }
    }
    return $moduleid;
@@ -717,15 +756,27 @@ function is_module_access($actionurl)
  *
  * @param int courseid
  * @return array of module ids with access details
+ * @ref Post to forum urls:
+ * 1. http://localhost/moodle/mod/forum/post.php?forum=2
+ * 2. reply: http://localhost/moodle/mod/forum/post.php?reply=130#mformforum
  */
 function get_course_module_accesses_breakdown($courseid)
 {
    global $CFG, $DB, $LOG, $MODE;
    global $FILTERDATES, $from, $to;
    
-   //show_log();
+   $flags = array('check_view_access_only'=>true, 'check_duplicates'=>false);
    
+    if( ! isset($LOG))
+        $LOG = getLog($courseid, 5);   
+        
+//    show_Log();        
+
    $module_types = get_reportable_module_types($courseid);
+   /*
+   $module_types[] = 'url';
+   $module_types[] = 'resource';   
+   */
     
    $last = array ( // to store previously counted access to try prevent duplicate counting
        'module_type' => NULL,
@@ -739,6 +790,7 @@ function get_course_module_accesses_breakdown($courseid)
       // check date filters
       if($FILTERDATES && $from && $to)
       {
+          echo "filterdates";
          if ($LOG['Unix_Date/Time'][$index] < $from) continue;
          if ($LOG['Unix_Date/Time'][$index] > $to) break;
       }       
@@ -746,21 +798,15 @@ function get_course_module_accesses_breakdown($courseid)
       // get activity details
       $view_access = strpos($LOG['Action'][$index],'view') > -1;
       $module_type = strtolower($LOG['Activity'][$index]);
-      $moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);
+      //$moduleid = parse_moduleid_from_actionurl($LOG['ActionURL'][$index]);
+      $moduleid = $LOG['cmid'][$index];
       
-      // check for inclusion
-      if (
-          $moduleid == NULL
-          ||
-          !in_array($module_type,$module_types)
-          ||
-          !($view_access)
-          ) {
-            continue;
-          }
-            
-       // check for duplicates
-       if (
+    // check for inclusions
+    if ($moduleid == 0 || $moduleid == NULL) { continue; }      
+    if (!in_array($module_type,$module_types)) { continue; }          
+    if ($flags['check_view_access_only'] && !($view_access)) { continue; }
+    if ($flags['check_duplicates']) {
+        if (
            $last->module_type == $module_type
            && 
            $last->moduleid == $moduleid
@@ -768,15 +814,16 @@ function get_course_module_accesses_breakdown($courseid)
            $last->date == $LOG['DateOnly']['Index']
            && 
            $last->userid == $LOG['UserID']['Index']
-       ) {
+        ) {
             continue;
-       }
-       else {
+        }
+        else {
            $last->module_type = $module_type;
            $last->moduleid = $moduleid;
            $last->date = $LOG['DateOnly']['Index'];
            $last->userid = $LOG['UserID']['Index'];
-       }
+        }
+    }
 
       // create module record if not already exists
       if (!array_key_exists($moduleid,$module_records)) {
@@ -807,6 +854,7 @@ function get_course_module_accesses_breakdown($courseid)
  *
  * @param courseid
  * @return void -> html
+ * TODO: Don't show user ids
  */
 function show_module_accesses_breakdown($courseid)
 {
@@ -816,7 +864,7 @@ function show_module_accesses_breakdown($courseid)
     	
     $module_types = get_reportable_module_types($courseid);
     
-    echo '<h3>'.'Activity view accesses'.'</h3>' . "\n";
+    echo '<h3>'.'Activity accesses'.'</h3>' . "\n";
     
    echo '<p><small>Showing activity types: ';
    $output = "";

@@ -1473,6 +1473,7 @@ function getLog($courseid, $Flag = 0)
    $City = array();
    $InformationID = array();
    $UserID = array();
+   $cmid = array();   
 
    if($Flag != 5)
    {
@@ -1586,19 +1587,22 @@ function getLog($courseid, $Flag = 0)
          if($L == 6)
             //["module"]
             $Activity[$recNo] = $val;
+         if($L == 7)
+            //["cmid"]
+            $cmid[$recNo] = $val;
          if($L == 8)
             //["action"]
             $Action[$recNo] = $Activity[$recNo] . ">" . $val;
          if($L == 9)
             //["url"]
             $URL[$recNo] = $val;
-         if($L == 10) //["info"]
+         if($L == 10) //["info"] //???
          {
             $SSQL = "select name from {resource} where id = " . $val;
             $info = getSQLFromDB($SSQL);
             $info = format_string($info);
             $info = strip_tags(urldecode($info));// Some XSS protection
-            $Information[$recNo] = $info;
+            $Information[$recNo] = $info; //???
          }
          if($L == 11)
             //["firstname"]
@@ -1635,9 +1639,10 @@ function getLog($courseid, $Flag = 0)
                           "LastName"=>$LastName,
                           "Email"=>$Email,
                           "Activity"=>$Activity,
+                          "cmid"=>$cmid,
                           "Action"=>$Action,
                           "ActionURL"=>$URL,
-                          "Information"=>$Information,
+                          "Information"=>$Information, //???
                           "Location"=>$City,
                           "User_Type"=>$UserType,
                           "RecordsNo"=>$all_records_count,
