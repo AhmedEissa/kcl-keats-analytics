@@ -2048,7 +2048,7 @@ function display_recently_accessed_modules_student_graph($data)
         var options = {
           title: ' . (($FILTERDATES && $from && $to)? '"First accessed activities"': '"Recently accesssed activities"') . ',
           hAxis: {title: "Activity"},
-          series: {0: {type: "line", color: "green"}, 1: {type: "line", color: "blue"}},
+          series: {0: {type: "line", color: "green"}, 1: {type: "bar", color: "blue"}},
           vAxis: {ticks: [0,25,50,75,100], title: "%"}
         };
 
