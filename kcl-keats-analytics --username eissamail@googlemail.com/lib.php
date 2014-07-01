@@ -114,7 +114,7 @@ function display_pageview($courseid)
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='page' />";
    $data .= "<input type='hidden' name='url' value='$url' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
+   $data .= "<div style='margin-top:25px'><input class='btnSubmit' type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
    if(isset($_SESSION['View']))
       unset($_SESSION['View']);
@@ -131,7 +131,7 @@ function display_learning_design($courseid)
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='learningdesign' />";
    $data .= "<input type='hidden' name='url' value='$url' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
+   $data .= "<div style='margin-top:25px'><input class='btnSubmit' type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
@@ -237,7 +237,7 @@ function display_localtion_based($courseid)
    $data .= "<input type='hidden' name='view' value='location' />";
    $data .= "<input type='hidden' name='data' value='$campusarray' />";
    $data .= "<input type='hidden' name='url' value='$url' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
+   $data .= "<div style='margin-top:25px'><input class='btnSubmit' type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
@@ -289,15 +289,11 @@ function display_forum_analytics($courseid)
    $data .= "<form action='$url' method='post'>";
    $data .= "<input type='hidden' name='view' value='forum' />";
    $data .= "<input type='hidden' name='url' value='$url' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
+   $data .= "<div style='margin-top:25px'><input class='btnSubmit' type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    return $data;
 }
-
-
-
-
 
 function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 0)
 {
