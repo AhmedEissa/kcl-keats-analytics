@@ -32,3 +32,25 @@ font-weight: bold;
 .bold {
 font-weight: bold;
 }
+.btnSubmit{
+	background:#4aaee7;
+	color:#fff;
+	border-radius: 5px;
+	border: 0px;
+	padding: 5px;
+	outline: none;
+	width: 100%;
+}
+.circle {
+border-radius 10px; 
+-moz-border-radius 10px; 
+-webkit-border-radius 10px;
+width: 5px;
+height: 5px;
+background: red; 
+text-align: left;
+}
+ul.b{
+    list-style-type: square;
+    color:red;
+}
