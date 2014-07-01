@@ -60,7 +60,7 @@ function getUserId()
    if($COURSE->id == 2 || $COURSE->id == 8)
       return get_userid_from_username("user");
    else
-      if($COURSE->id == 4)
+      if($COURSE->id == 3 || $COURSE->id ==4)
          return get_userid_from_username("dental-student-tester01");
       else
          return $USER->id;
@@ -844,7 +844,7 @@ function show_module_accesses_breakdown_v1($courseid)
     }
     echo '</tbody>';    
     echo '</table>';   
-    echo '<br/><br/><p><small>* Others may include unknown user types if enrolments have changed.</small<</p>';
+    echo '<br/><br/><p><small>* Others may include unknown user types if enrolments have changed.</small></p>';
 }
 
 
@@ -1321,7 +1321,7 @@ function display_progress_tracker_include($courseid)
 
    $data .= "</table>";
    $data .= "<input type='hidden' name='view' value='ProgressTracker' />";
-   $data .= "<div style='margin-top:25px'><input type='submit' name='submit' value='More' /></div>";
+   $data .= "<div style='margin-top:25px'><input class='btnSubmit' type='submit' name='submit' value='More' /></div>";
    $data .= "</form>";
 
    // include and activate jquery datatables (for main content but included here so after jquery loaded)
@@ -1449,6 +1449,45 @@ function display_required_modules_completion_student_graph($data)
         </script>
     <div id="required_modules_completion_student_graph_div" class="chart" style="width: 100%; height: auto; min-height: 300px"></div>
     ';
+}
+
+
+ function display_recently_accessed_modules_student_Bar_graph($data,$courseid)
+  {
+      //$studentPercent = 0
+
+    echo '<center><script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+      var data = google.visualization.arrayToDataTable([
+      ["ID", "Other students percentage", "Your percentage", { role: "annotation" } ],';
+      foreach($data as $c=>$row)
+      {
+        //$ii;
+         if($row['accessed'])
+          {
+            $studentPercent = (100 / get_course_number_students($courseid));
+          }
+          else
+            $studentPercent = 0;
+
+          echo "['".$row['name'] ."', ". ($row['percentage'] - (int)$studentPercent).", ".(int)$studentPercent.", ''],";
+        }
+      echo ']);
+        var options = {
+        width: 600,
+        height: 400,
+        legend: { position: "top", maxLines: 3 },
+        bar: { groupWidth: "75%" },
+        isStacked: true,
+        };
+        var chart = new google.visualization.BarChart(document.getElementById("chart_div"));
+        chart.draw(data, options);
+        }
+        </script>
+        <div id="chart_div"></div></center>';
 }
 
 function display_recently_accessed_modules_student_graph($data)
@@ -1756,6 +1795,7 @@ function display_progress_tracker_chart_include($courseid)
    else
    {
       display_recently_accessed_modules_student_graph($data);
+      display_recently_accessed_modules_student_Bar_graph($data,$courseid);
    }
 
    echo '<br/><br/>' . "\n";

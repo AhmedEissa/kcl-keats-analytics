@@ -82,9 +82,9 @@ $dateFilterHTML = '
 </script>
 <Form method="post" action="' . $PAGE->url . '#tab' . $_SESSION["lasttabid"] . '">
 <label for="from">Filter date from: </label>
-<input type="text" id="from" name="from"/>
+<input type="date" id="from" name="from"/>
 <label for="to"> to: </label>
-<input type="text" id="to" name="to"/>
+<input type="date" id="to" name="to"/>
 <input type="hidden" name="view" value="' . $view . '" />
 <i> (leave it empty to select the whole date range)</i><br />
 <input type="submit" value="Reload report"></Form>';
