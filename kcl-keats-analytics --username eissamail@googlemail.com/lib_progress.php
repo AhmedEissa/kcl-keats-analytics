@@ -58,7 +58,7 @@ function getUserId()
        //return get_userid_from_username("user");
    //return get_userid_from_username("dental-student-tester01");
    if($COURSE->id == 2 || $COURSE->id == 8)
-      return get_userid_from_username("user");
+      return get_userid_from_username("dental-student-tester01");
    else
       if($COURSE->id == 3 || $COURSE->id ==4)
          return get_userid_from_username("dental-student-tester01");
@@ -1077,7 +1077,7 @@ function display_progress_tracker_include($courseid)
    $data .= '<tr title = "Recent accesses from current students"><td><b><u>Recently Accessed Resources:</u></b></td><td class="overall" id = "recently_accessed_resources_overall" title="Rough indicator only">{Recently_Accessed_Resources}</td></tr>';
 
    $recent_accesses = get_course_modules_recently_accessed($courseid, DISPLAY_LIMIT_BLOCK);
-   $data .= '<tr><td colspan = "2">';
+   $data .= '<tr><td colspan = "2"></td></tr>';
 
    $data .= '<table class = "block-analytics-progress">';
 
@@ -1116,7 +1116,7 @@ function display_progress_tracker_include($courseid)
             $indicatorclass = "notdone";
          }
       }
-      $data .= '<tr title = "' . $title . '">';
+      $data .= '<tr title = "' . $title . '"></tr>';
       $data .= '<td class="indicator ' . $class . '">';
       $data .= $indicator;
       $data .= '</td>';
@@ -1451,10 +1451,45 @@ function display_required_modules_completion_student_graph($data)
     ';
 }
 
+function display_recently_accessed_modules_student_Bar_Different_Color_graph($data,$courseid)
+{
+  echo '<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+          <script type="text/javascript">
+          google.load("visualization", "1", {packages:["corechart"]});
+          google.setOnLoadCallback(drawChart);
+          function drawChart() {
+            var data = google.visualization.arrayToDataTable([
+          [\'Name\', \'Accessed\', \'Not accessed\'],';
+              //$accessedData;
+            foreach($data as $c=>$row)
+                {
 
+            //['Year', 'Austria', { role: 'style' }, 'Bulgaria', { role: 'style' }],
+                   if($row['accessed'])
+                    {
+                      echo "['". $row['name'] . "', " . $row['percentage'] . ", 0" . "],";
+                    }
+                    else
+
+                      echo "['". $row['name'] . "', " .  "0, " . $row['percentage'] . "],";
+                }
+  echo ']);
+        var options = {
+          title: \'Activity accessed by students\',
+          height:800,
+          bar: { groupWidth: "75%" },
+          vAxis: {title: "Activity Name", titleTextStyle: {color: "red"}},
+          hAxis: {title: "Percentage"}
+          };
+
+        var chart = new google.visualization.BarChart(document.getElementById(\'getStudentAccessedAndNot\'));
+        chart.draw(data, options);
+      }
+    </script>
+    <div id="getStudentAccessedAndNot"></div>';
+}
  function display_recently_accessed_modules_student_Bar_graph($data,$courseid)
   {
-      //$studentPercent = 0
 
     echo '<center><script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
@@ -1477,8 +1512,7 @@ function display_required_modules_completion_student_graph($data)
         }
       echo ']);
         var options = {
-        width: 600,
-        height: 400,
+        height:800,
         legend: { position: "top", maxLines: 3 },
         bar: { groupWidth: "75%" },
         isStacked: true,
@@ -1794,7 +1828,13 @@ function display_progress_tracker_chart_include($courseid)
    }
    else
    {
+      //Coloumn chart to show the students who accessed the activity.
       display_recently_accessed_modules_student_graph($data);
+
+      //Chart with different colour to show the amount of students who accessed activities.
+      display_recently_accessed_modules_student_Bar_Different_Color_graph($data,$courseid);
+
+      //StockBar Chart to show the amount of students who accessed activities.
       display_recently_accessed_modules_student_Bar_graph($data,$courseid);
    }
 
