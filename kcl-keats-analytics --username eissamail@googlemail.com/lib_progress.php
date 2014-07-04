@@ -1453,40 +1453,48 @@ function display_required_modules_completion_student_graph($data)
 
 function display_recently_accessed_modules_student_Bar_Different_Color_graph($data,$courseid)
 {
-  echo '<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    echo '<script type="text/javascript" src="https://www.google.com/jsapi"></script>
           <script type="text/javascript">
           google.load("visualization", "1", {packages:["corechart"]});
           google.setOnLoadCallback(drawChart);
           function drawChart() {
             var data = google.visualization.arrayToDataTable([
-          [\'Name\', \'Accessed\', \'Not accessed\'],';
+          ["Name", "Accessed", { role: \'style\' },{role: \'annotation\' }],
+          [\'\', 0, \'#4aaee7\',\'\'],';
               //$accessedData;
             foreach($data as $c=>$row)
                 {
-
-            //['Year', 'Austria', { role: 'style' }, 'Bulgaria', { role: 'style' }],
                    if($row['accessed'])
                     {
-                      echo "['". $row['name'] . "', " . $row['percentage'] . ", 0" . "],";
+                      echo "['". $row['name'] . "', " . $row['percentage'] . ", '#4aaee7',". "'".$row['percentage']."%'". "],";
                     }
                     else
-
-                      echo "['". $row['name'] . "', " .  "0, " . $row['percentage'] . "],";
+                      echo "['". $row['name'] . "', " .  $row['percentage'].", '#ff0000',". "'".$row['percentage']."%'". "],";
                 }
   echo ']);
         var options = {
-          title: \'Activity accessed by students\',
+          title: "Resource viewed by students",
           height:800,
-          bar: { groupWidth: "75%" },
-          vAxis: {title: "Activity Name", titleTextStyle: {color: "red"}},
-          hAxis: {title: "Percentage"}
+          legend: { position: "none" },
+          bar: { groupWidth: "50%" },
+          vAxis: {title: "Resources", titleTextStyle: {color: "red"}},
+          hAxis: {title: "Students who accessed the resources (in %)"},
           };
 
-        var chart = new google.visualization.BarChart(document.getElementById(\'getStudentAccessedAndNot\'));
+        var chart = new google.visualization.BarChart(document.getElementById("getStudentAccessedAndNot"));
         chart.draw(data, options);
       }
     </script>
-    <div id="getStudentAccessedAndNot"></div>';
+    <div id="getStudentAccessedAndNot"></div>
+    <div style="background-color:white; width="100%";">
+        <div style="margin-left:200px; font-size:20px;">
+            <img src="./images/blueSquare.png" height="25" width="25">&nbsp;&nbsp;&nbsp;Resource you viewed<br/>
+            <hr align="left" width="23%" />
+            <img src="./images/redSquare.png" height="25" width="25">&nbsp;&nbsp;&nbsp;Resource you have not viewed
+            <hr align="left" width="23%" />
+        </div>
+    </div>
+    ';
 }
  function display_recently_accessed_modules_student_Bar_graph($data,$courseid)
   {
@@ -1828,14 +1836,14 @@ function display_progress_tracker_chart_include($courseid)
    }
    else
    {
-      //Coloumn chart to show the students who accessed the activity.
-      display_recently_accessed_modules_student_graph($data);
+      //Remove comment to show Coloumn chart to show the students who accessed the activity.
+      //display_recently_accessed_modules_student_graph($data);
 
       //Chart with different colour to show the amount of students who accessed activities.
       display_recently_accessed_modules_student_Bar_Different_Color_graph($data,$courseid);
 
-      //StockBar Chart to show the amount of students who accessed activities.
-      display_recently_accessed_modules_student_Bar_graph($data,$courseid);
+      //Remove comment to show StockBar Chart to show the amount of students who accessed activities.
+      //display_recently_accessed_modules_student_Bar_graph($data,$courseid);
    }
 
    echo '<br/><br/>' . "\n";
