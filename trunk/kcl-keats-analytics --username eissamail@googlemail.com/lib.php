@@ -394,8 +394,8 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
 
     google.setOnLoadCallback(drawVisualization);
     </script>
-    <div id="studentChartVisualisation" style="float: left; width:730px;height:600px;margin:auto;padding-top:50px;"></div>
-    <div id="visualization" style="float: right; width:730px;height:600px;margin:auto;padding-top:50px;"></div>
+    <div id="studentChartVisualisation" style="float: left; width:49%;height:600px;margin:auto;padding-top:50px;"></div>
+    <div id="visualization" style="float: right; width:49%;height:600px;margin:auto;padding-top:50px;"></div>
    <?php
 
    //Code for GeoMap Chart
