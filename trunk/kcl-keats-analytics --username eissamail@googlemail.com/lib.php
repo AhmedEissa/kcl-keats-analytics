@@ -423,7 +423,7 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
                chart.draw(data, options);
              };
          </script>";
-         echo '<div id="chart_div" style="margin-top: 13px;float: left;width:730px;height:600px"></div>';
+         echo '<div id="chart_div" style="margin-top: 13px;float: left;width:49%;height:600px"></div>';
 
          echo "<script type='text/javascript' src='https://www.google.com/jsapi'></script>
               <script type='text/javascript'>
@@ -449,7 +449,7 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
                chart.draw(data, options);
              };
          </script>";
-         echo '<div id="chart_div_Geo_Visualisation" style="margin-top: 13px;float: right;width:730px;height:600px"></div>';
+         echo '<div id="chart_div_Geo_Visualisation" style="margin-top: 13px;float: right;width:49%;height:600px"></div>';
 
    //var_dump($dataview);
 }
