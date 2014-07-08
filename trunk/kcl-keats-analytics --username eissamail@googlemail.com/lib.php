@@ -299,6 +299,8 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
 {
    $DataStructure = getLog($courseid);//, 2);
    $NLLocations = $DataStructure["Location"];
+   //var_dump($DataStructure["User_Type"]);
+
    $arrDate = $DataStructure["Date/Time"];
    $Locations = array_replace($NLLocations, array_fill_keys(array_keys($NLLocations, null), 'Unknown'));
 
@@ -323,6 +325,7 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
    $ArrLoc = $DataStructure["Location"];
    $ArrUsers = $DataStructure["User_Type"];
    $cnt = count($ArrUsers);
+   $arrStudentsResults;
    for($p = 0; $p <= $cnt; $p++)
    {
       $var1 = $ArrLoc[$p];
@@ -331,25 +334,20 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
       $timestamp = strtotime($Fdate);
       if(($timestamp >= $UnixMinDate) && ($timestamp <= $UnixMaxDate))
       {
-         /*if(($var2 == "student")) //Not agreed yet with Dr. Jonathan.
+         if(($var2 == "student")) //Not agreed yet with Dr. Jonathan.
          {
-         $arrStudentsResults[$p] = $var1;
+            $arrStudentsResults[$p] = $var1;
          }
          else //Staff or other
          {
-         $arrStaffResults[$p] = $var1;
-         }*/
-         $arrLocations[$p] = $var1;
+            $arrLocations[$p] = $var1;
+         }
+         //$arrLocations[$p] = $var1;
       }
    }
-   //$arrResultsStudents = array_count_values($arrStudentsResults);//Not agreed yet with Dr. Jonathan.
+   $arrResultsStudents = array_count_values($arrStudentsResults);//Not agreed yet with Dr. Jonathan.
    //$arrResultsStaff = array_count_values($arrStaffResults);
-
    $arrResults = array_count_values($arrLocations);
-   foreach($arrResults as $index=>$value)
-   {
-      $dataview = $dataview . "['$index',$value]" . ",\n";
-   }
 
    ?>
     <script type="text/javascript" src="//www.google.com/jsapi"></script>
@@ -361,43 +359,99 @@ function display_locationbased_chart($courseid, $data, $MinDate = 0, $MaxDate = 
         // Create and populate the data table.
         var data = google.visualization.arrayToDataTable([
         ['Location', 'Total Pageviews'],
-   <?php echo $dataview;?>
+           <?php    
+           foreach($arrResults as $index=>$value)
+           {
+              echo "['$index',$value]" . ",\n";
+           }
+           ?>
         ]);
 
         // Create and draw the visualization.
         new google.visualization.PieChart(document.getElementById('visualization')).
-        draw(data, {title:"Visits by users location"});
+        draw(data, {title:"Visits by users location (Staff)"});
     }
 
     google.setOnLoadCallback(drawVisualization);
     </script>
-    <div id="visualization" style="width:750px;height:500px;margin:auto;padding-top:50px;"></div><br />
+
+    <script type="text/javascript">
+    function drawVisualization() {
+        // Create and populate the data table.
+        var data = google.visualization.arrayToDataTable([
+        ['Location', 'Total Pageviews'],
+           <?php    
+           foreach($arrResultsStudents as $index=>$value)
+           {
+              echo "['$index',$value]" . ",\n";
+           }
+           ?>
+        ]);
+        // Create and draw the visualization.
+        new google.visualization.PieChart(document.getElementById('studentChartVisualisation')).
+        draw(data, {title:"Visits by users location (Students)"});
+    }
+
+    google.setOnLoadCallback(drawVisualization);
+    </script>
+    <div id="studentChartVisualisation" style="float: left; width:730px;height:600px;margin:auto;padding-top:50px;"></div>
+    <div id="visualization" style="float: right; width:730px;height:600px;margin:auto;padding-top:50px;"></div>
    <?php
 
    //Code for GeoMap Chart
-   echo "      <script type='text/javascript' src='https://www.google.com/jsapi'></script>
-                    <script type='text/javascript'>
-                    google.load('visualization', '1', {'packages': ['geochart']});
-                    google.setOnLoadCallback(drawMarkersMap);
+   echo "<script type='text/javascript' src='https://www.google.com/jsapi'></script>
+              <script type='text/javascript'>
+                google.load('visualization', '1', {'packages': ['geochart']});
+                google.setOnLoadCallback(drawMarkersMap);
 
-                    function drawMarkersMap() {
+                function drawMarkersMap() {
                     var data = google.visualization.arrayToDataTable([
-                        ['City',   'Number of Access'],";
-   echo $dataview;
-   echo "      ]);
+                                  ['City',   'Number of Access'],";
+                   foreach($arrResults as $index=>$value)
+                           {
+                              echo "['$index',$value]" . ",\n";
+                           }
 
-                      var options = {
-                        region: 'GB',
-                        displayMode: 'markers',
-                        colorAxis: {colors: ['green', 'blue']}
-                    };
+                   echo "]);
+                   var options = {
+                   region: 'GB',
+                   displayMode: 'markers',
+                   colorAxis: {colors: ['green', 'blue']}
+               };
 
-                    var chart = new google.visualization.GeoChart(document.getElementById('chart_div'));
-                    chart.draw(data, options);
-                    };
-                    </script>
-                ";
-   echo '    <center><div id="chart_div" style="width: 750px; height: 500px;"></div></center>';
+               var chart = new google.visualization.GeoChart(document.getElementById('chart_div'));
+               chart.draw(data, options);
+             };
+         </script>";
+         echo '<div id="chart_div" style="margin-top: 13px;float: left;width:730px;height:600px"></div>';
+
+         echo "<script type='text/javascript' src='https://www.google.com/jsapi'></script>
+              <script type='text/javascript'>
+                google.load('visualization', '1', {'packages': ['geochart']});
+                google.setOnLoadCallback(drawMarkersMap);
+
+                function drawMarkersMap() {
+                    var data = google.visualization.arrayToDataTable([
+                                  ['City',   'Number of Access'],";
+                   foreach($arrResultsStudents as $index=>$value)
+                           {
+                              echo "['$index',$value]" . ",\n";
+                           }
+
+                   echo "]);
+                   var options = {
+                   region: 'GB',
+                   displayMode: 'markers',
+                   colorAxis: {colors: ['green', 'blue']}
+               };
+
+               var chart = new google.visualization.GeoChart(document.getElementById('chart_div_Geo_Visualisation'));
+               chart.draw(data, options);
+             };
+         </script>";
+         echo '<div id="chart_div_Geo_Visualisation" style="margin-top: 13px;float: right;width:730px;height:600px"></div>';
+
+   //var_dump($dataview);
 }
 
 function display_forum_view($courseid, $MinDate = 0, $MaxDate = 0)
