@@ -244,8 +244,7 @@ function get_course_modules_info($courseid)
             FROM {course_modules}, {modules}
             WHERE {course_modules}.module = {modules}.id
             AND course = ?
-            AND {modules}.name <> 'label'
-            ;";// leaving out labels?
+            AND {modules}.name <> 'label';";// leaving out labels?
    $params = array($courseid);
    $result = $DB->get_records_sql($sql, $params);
 
