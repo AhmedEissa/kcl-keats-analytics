@@ -1,15 +1,15 @@
 # kcl-keats-analytics
 Automatically exported from code.google.com/p/kcl-keats-analytics
 KCL KEATS Analytics Moodle Block.
-
+---
 Directed by: KCL iTEL Hub (http://www.kcl.ac.uk/dentistry/Innovation/itelhub/index.aspx)
 Project web page: (http://www.kcl.ac.uk/dentistry/innovation/itelhub/research.aspx)
 Developed by:
 Dr. Panagiotis Fotaris, panagiotis.fotaris@uwl.ac.uk
-Mr. Ahmed Eissa, on behalf of Eissa Creations Limited (http://www.eissacreations.com)
+Mr. Ahmed Eissa, on behalf of AppOne Microservices UK Limited (https://app-one.co.uk)
 Mr. Abdalla Al Khalaf, abdalla.alkhalaf@kcl.ac.uk.
 Mr. Brent Cunningham, Brent.Cunningham@kcl.ac.uk .
-
+---
 KEATS Analytics:
 Learning analytics is an emergent field of research that promises to harness the power of advances in educational data mining, interpretation, visualization, and modelling to improve understandings of teaching and learning, and to tailor education to individual students more effectively.
 
